@@ -29,7 +29,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<LogCoinTransaction>(_onLogCoinTransaction);
     on<ActivateRestDay>(_onActivateRestDay);
     on<CollectDailyPuzzle>(_onCollectDailyPuzzle);
-    on<ClearProfile>(_onClearProfile);
   }
 
   Future<void> _savePrefs(int coins, int streak, DateTime? lastDate, {DateTime? restDayDate, int? maxStreak}) async {
@@ -122,26 +121,28 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       weeklyHistory: savedWeekly,
       collectedPuzzles: savedCollected.toSet(),
     ));
-    if (savedLastDate != null) {
-      await _checkStreakExpiry(emit);
-    }
 
     try {
       final res = await _client.getUser();
       if (res['status'] == 200 && res['user'] != null) {
         var user = User.fromMap(res['user'] as Map<String, dynamic>);
 
-        if (user.coins < state.user.coins) user = user.copyWith(coins: state.user.coins);
-        user = user.copyWith(streak: state.user.streak);
+        // API is source of truth — save to local cache for offline fallback
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('profile_coins', user.coins);
+        await prefs.setInt('profile_streak', user.streak);
+        if (state.lastStreakDate != null) {
+          await prefs.setString('profile_last_streak_date', state.lastStreakDate!.toIso8601String());
+        }
+
         emit(state.copyWith(user: user));
         return;
       }
     } catch (_) {}
 
-    if (savedCoins > 0 || savedStreak > 0) {
-      emit(state.copyWith(
-        user: state.user.copyWith(coins: savedCoins),
-      ));
+    // Offline fallback: use local cache
+    if (savedLastDate != null) {
+      await _checkStreakExpiry(emit);
     }
   }
 
@@ -295,28 +296,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       'amount': event.amount,
     });
     emit(state.copyWith(coinHistory: history));
-  }
-
-  Future<void> _onClearProfile(ClearProfile event, Emitter<ProfileState> emit) async {
-    final prefs = await SharedPreferences.getInstance();
-    await Future.wait([
-      prefs.remove('profile_coins'),
-      prefs.remove('profile_streak'),
-      prefs.remove('profile_last_streak_date'),
-      prefs.remove('rest_day_date'),
-      prefs.remove('max_streak'),
-      prefs.remove('weekly_history'),
-      prefs.remove('collected_puzzles'),
-      prefs.remove('daily_puzzle_date'),
-    ]);
-    emit(ProfileState(
-      user: User(
-        id: const Uuid().v4(),
-        name: 'An Yujin',
-        email: 'user@example.com',
-        lastActiveDate: DateTime.now(),
-      ),
-    ));
   }
 
   String _transactionTitle(String type, int amount) {

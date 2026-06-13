@@ -86,5 +86,3 @@ class CollectDailyPuzzle extends ProfileEvent {
   @override
   List<Object?> get props => [puzzleId];
 }
-
-class ClearProfile extends ProfileEvent {}

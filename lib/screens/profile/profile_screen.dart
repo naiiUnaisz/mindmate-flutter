@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:application_belajar/config/theme.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
 import 'package:application_belajar/networks/api_client.dart';
 import 'package:application_belajar/bloc/task/task_bloc.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
@@ -338,7 +337,6 @@ class _LogoutDialog extends StatelessWidget {
                       child: ElevatedButton(
                           onPressed: () {
                             context.read<TaskBloc>().add(ClearTasks());
-                            context.read<ProfileBloc>().add(ClearProfile());
                             ApiClient().apiLogout();
                             Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
                           },
