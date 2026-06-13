@@ -10,6 +10,10 @@ import 'package:application_belajar/networks/api_client.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final ApiClient _client = ApiClient();
+  String? _userEmail;
+
+  String _prefKey(String key) => _userEmail != null ? '${_userEmail}_$key' : key;
+
   ProfileBloc()
       : super(ProfileState(
           user: User(
@@ -33,18 +37,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
   Future<void> _savePrefs(int coins, int streak, DateTime? lastDate, {DateTime? restDayDate, int? maxStreak}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('profile_coins', coins);
-    await prefs.setInt('profile_streak', streak);
-    final savedMax = prefs.getInt('max_streak') ?? 0;
+    await prefs.setInt(_prefKey('profile_coins'), coins);
+    await prefs.setInt(_prefKey('profile_streak'), streak);
+    final savedMax = prefs.getInt(_prefKey('max_streak')) ?? 0;
     final effectiveMax = maxStreak ?? (streak > savedMax ? streak : savedMax);
-    await prefs.setInt('max_streak', effectiveMax);
+    await prefs.setInt(_prefKey('max_streak'), effectiveMax);
     if (lastDate != null) {
-      await prefs.setString('profile_last_streak_date', lastDate.toIso8601String());
+      await prefs.setString(_prefKey('profile_last_streak_date'), lastDate.toIso8601String());
     }
     if (restDayDate != null) {
-      await prefs.setString('rest_day_date', restDayDate.toIso8601String());
+      await prefs.setString(_prefKey('rest_day_date'), restDayDate.toIso8601String());
     } else {
-      await prefs.remove('rest_day_date');
+      await prefs.remove(_prefKey('rest_day_date'));
     }
   }
 
@@ -54,7 +58,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       'tasks': v['tasks'] ?? 0,
       'coins': v['coins'] ?? 0,
     }));
-    await prefs.setString('weekly_history', jsonEncode(encoded));
+    await prefs.setString(_prefKey('weekly_history'), jsonEncode(encoded));
   }
 
   Future<void> _checkStreakExpiry(Emitter<ProfileState> emit) async {
@@ -96,22 +100,23 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
   Future<void> _onLoadProfile(LoadProfile event, Emitter<ProfileState> emit) async {
     final prefs = await SharedPreferences.getInstance();
+    _userEmail = prefs.getString('current_user_email');
 
-    final savedCoins = prefs.getInt('profile_coins') ?? 0;
-    final savedStreak = prefs.getInt('profile_streak') ?? 0;
-    final savedLastDateStr = prefs.getString('profile_last_streak_date');
+    final savedCoins = prefs.getInt(_prefKey('profile_coins')) ?? 0;
+    final savedStreak = prefs.getInt(_prefKey('profile_streak')) ?? 0;
+    final savedLastDateStr = prefs.getString(_prefKey('profile_last_streak_date'));
     final savedLastDate = savedLastDateStr != null ? DateTime.tryParse(savedLastDateStr) : null;
-    final savedRestDayStr = prefs.getString('rest_day_date');
+    final savedRestDayStr = prefs.getString(_prefKey('rest_day_date'));
     final savedRestDay = savedRestDayStr != null ? DateTime.tryParse(savedRestDayStr) : null;
-    final savedMaxStreak = prefs.getInt('max_streak') ?? 0;
-    final savedWeeklyStr = prefs.getString('weekly_history');
+    final savedMaxStreak = prefs.getInt(_prefKey('max_streak')) ?? 0;
+    final savedWeeklyStr = prefs.getString(_prefKey('weekly_history'));
     Map<String, Map<String, int>> savedWeekly = {};
     if (savedWeeklyStr != null) {
       final decoded = jsonDecode(savedWeeklyStr) as Map<String, dynamic>;
       savedWeekly = decoded.map((k, v) => MapEntry(k, Map<String, int>.from(v as Map)));
     }
 
-    final savedCollected = prefs.getStringList('collected_puzzles') ?? <String>[];
+    final savedCollected = prefs.getStringList(_prefKey('collected_puzzles')) ?? <String>[];
 
     emit(state.copyWith(
       user: state.user.copyWith(coins: savedCoins, streak: savedStreak),
@@ -129,10 +134,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
         // API is source of truth — save to local cache for offline fallback
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('profile_coins', user.coins);
-        await prefs.setInt('profile_streak', user.streak);
+        await prefs.setInt(_prefKey('profile_coins'), user.coins);
+        await prefs.setInt(_prefKey('profile_streak'), user.streak);
         if (state.lastStreakDate != null) {
-          await prefs.setString('profile_last_streak_date', state.lastStreakDate!.toIso8601String());
+          await prefs.setString(_prefKey('profile_last_streak_date'), state.lastStreakDate!.toIso8601String());
         }
 
         emit(state.copyWith(user: user));
@@ -260,7 +265,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final updated = Set<String>.from(state.collectedPuzzles)..add(event.puzzleId);
     emit(state.copyWith(collectedPuzzles: updated));
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('collected_puzzles', updated.toList());
+    await prefs.setStringList(_prefKey('collected_puzzles'), updated.toList());
   }
 
   Future<void> _onUnlockPuzzle(UnlockPuzzle event, Emitter<ProfileState> emit) async {
@@ -284,7 +289,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     } catch (_) {}
     _savePrefs(updated.coins, updated.streak, state.lastStreakDate, restDayDate: state.restDayDate);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('collected_puzzles', updatedPuzzles.toList());
+    await prefs.setStringList(_prefKey('collected_puzzles'), updatedPuzzles.toList());
   }
 
   void _onLogCoinTransaction(LogCoinTransaction event, Emitter<ProfileState> emit) {

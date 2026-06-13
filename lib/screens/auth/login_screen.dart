@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/bloc/auth/auth_bloc.dart';
 import 'package:application_belajar/bloc/auth/auth_event.dart';
 import 'package:application_belajar/bloc/auth/auth_state.dart';
@@ -30,9 +31,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state.status == AuthStatus.loginSuccess) {
           context.read<AuthBloc>().add(AuthReset());
+          final email = _emailController.text;
+          final prefs = await SharedPreferences.getInstance();
+          if (!context.mounted) return;
+          await prefs.setString('current_user_email', email);
+          if (!context.mounted) return;
           context.read<TaskBloc>().add(LoadTasks());
           context.read<ProfileBloc>().add(LoadProfile());
           Navigator.of(context).pushNamedAndRemoveUntil('/main', (_) => false);
