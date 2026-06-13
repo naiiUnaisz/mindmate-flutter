@@ -355,5 +355,69 @@ class ApiClient {
     return {'status': res.statusCode, ...body};
   }
 
+  // ── Change Email / Password ──
+  Future<Map<String, dynamic>> changeEmail(
+      String currentEmail, String newEmail, String confirmEmail) async {
+    final res = await _client.post(
+      _uri(ApiConfig.changeEmail),
+      headers: _headers,
+      body: jsonEncode({
+        'current_email': currentEmail,
+        'new_email': newEmail,
+        'confirm_email': confirmEmail,
+      }),
+    );
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  Future<Map<String, dynamic>> changePassword(
+      String currentPassword, String newPassword, String confirmPassword) async {
+    final res = await _client.post(
+      _uri(ApiConfig.changePassword),
+      headers: _headers,
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+        'confirm_password': confirmPassword,
+      }),
+    );
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  // ── Settings ──
+  Future<Map<String, dynamic>> updateSettings(
+      Map<String, dynamic> settings) async {
+    final res = await _client.post(
+      _uri(ApiConfig.settings),
+      headers: _headers,
+      body: jsonEncode(settings),
+    );
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  // ── Relax / Apps ──
+  Future<Map<String, dynamic>> getApps() async {
+    final res = await _client.get(
+      _uri(ApiConfig.apps),
+      headers: _headers,
+    );
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  // ── Rest Day ──
+  Future<Map<String, dynamic>> restDay(String date) async {
+    final res = await _client.post(
+      _uri(ApiConfig.restDay),
+      headers: _headers,
+      body: jsonEncode({'date': date}),
+    );
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
   void dispose() => _client.close();
 }

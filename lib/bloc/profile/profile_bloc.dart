@@ -427,6 +427,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     _savePrefs(state.user.coins, state.user.streak, state.lastStreakDate,
         restDayDate: today,
         earnedCoins: state.user.earnedCoins, spentCoins: state.user.spentCoins);
+    try {
+      await _client.restDay(
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
+    } catch (_) {}
   }
 
   Future<void> _onDeactivateRestDay(DeactivateRestDay event, Emitter<ProfileState> emit) async {

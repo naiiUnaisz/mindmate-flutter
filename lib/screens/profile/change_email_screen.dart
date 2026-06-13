@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:application_belajar/networks/api_client.dart';
 
 /// Change Email screen matching the MindMate design.
 class ChangeEmailScreen extends StatefulWidget {
@@ -95,12 +96,34 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Logic to save email
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Email changed successfully')),
-                    );
+                  onPressed: () async {
+                    final current = _currentController.text.trim();
+                    final newEmail = _newController.text.trim();
+                    final confirm = _confirmController.text.trim();
+                    if (current.isEmpty || newEmail.isEmpty || confirm.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please fill all fields')),
+                      );
+                      return;
+                    }
+                    if (newEmail != confirm) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('New emails do not match')),
+                      );
+                      return;
+                    }
+                    final res = await ApiClient().changeEmail(current, newEmail, confirm);
+                    if (!context.mounted) return;
+                    if (res['status'] == 200) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Email changed successfully')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(res['message'] ?? 'Failed to change email')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7658B2),

@@ -41,4 +41,17 @@ class ApiConfig {
   static const String trash = '/trash';
   static const String trashRestore = '/trash/restore';
   static const String trashDelete = '/trash/delete';
+
+  // ── Change Email / Password ──
+  static const String changeEmail = '/user/change-email';
+  static const String changePassword = '/user/change-password';
+
+  // ── Settings ──
+  static const String settings = '/user/settings';
+
+  // ── Relax / Apps ──
+  static const String apps = '/apps';
+
+  // ── Rest Day ──
+  static const String restDay = '/daily-record/rest-day';
 }

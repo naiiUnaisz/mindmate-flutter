@@ -4,6 +4,7 @@ import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_state.dart';
 import 'package:application_belajar/screens/relax/relax_category_screen.dart';
 import 'package:application_belajar/widgets/unlock_content_dialog.dart';
+import 'package:application_belajar/networks/api_client.dart';
 
 class RelaxScreen extends StatefulWidget {
   const RelaxScreen({super.key});
@@ -13,10 +14,55 @@ class RelaxScreen extends StatefulWidget {
 }
 
 class _RelaxScreenState extends State<RelaxScreen> {
+  List<Map<String, dynamic>> _allApps = [];
+
   @override
-  Widget build(BuildContext context) {
-    // Dummy data for top picks
-    final List<Map<String, dynamic>> topPicks = [
+  void initState() {
+    super.initState();
+    _loadApps();
+  }
+
+  Future<void> _loadApps() async {
+    try {
+      final res = await ApiClient().getApps();
+      if (res['status'] == 200 && res['apps'] != null) {
+        final apps = (res['apps'] as List).cast<Map<String, dynamic>>();
+        if (mounted) {
+          setState(() {
+            _allApps = apps.map((a) => _mapApp(a)).toList();
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Map<String, dynamic> _mapApp(Map<String, dynamic> app) {
+    return {
+      'name': app['name'] ?? '',
+      'icon': Icons.apps,
+      'imagePath': app['icon'] ?? '',
+      'iconBg': const Color(0xFF7C3AED),
+      'iconColor': Colors.white,
+      'coin': app['coin_cost'] ?? 30,
+      'time': app['duration'] ?? 30,
+      'category': (app['category'] ?? '').toString().toLowerCase(),
+    };
+  }
+
+  List<Map<String, dynamic>> get _topPicks =>
+      _allApps.isNotEmpty ? _allApps : _defaultTopPicks();
+
+  List<Map<String, dynamic>> _appsByCategory(String category) {
+    if (_allApps.isNotEmpty) {
+      return _allApps
+          .where((a) => (a['category'] as String) == category.toLowerCase())
+          .toList();
+    }
+    return [];
+  }
+
+  List<Map<String, dynamic>> _defaultTopPicks() {
+    return [
       {
         'name': 'Tiktok',
         'icon': Icons.music_note,
@@ -25,6 +71,7 @@ class _RelaxScreenState extends State<RelaxScreen> {
         'iconColor': Colors.white,
         'coin': 30,
         'time': 30,
+        'category': 'social',
       },
       {
         'name': 'Instagram',
@@ -39,39 +86,43 @@ class _RelaxScreenState extends State<RelaxScreen> {
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
         ),
+        'category': 'social',
       },
       {
         'name': 'Spotify',
-        'icon': Icons.music_note, // Approximate
+        'icon': Icons.music_note,
         'imagePath': 'assets/images/spotify.jpg',
         'iconBg': const Color(0xFF1DB954),
         'iconColor': Colors.black,
         'coin': 30,
         'time': 30,
+        'category': 'music',
       },
       {
         'name': 'Roblox',
         'icon': Icons.crop_square_rounded,
         'imagePath': 'assets/images/roblox.jpg',
-        'iconBg': const Color(0xFF0055D1), // approximate
+        'iconBg': const Color(0xFF0055D1),
         'iconColor': Colors.white,
         'coin': 30,
         'time': 30,
+        'category': 'game',
       },
       {
         'name': 'Youtube',
         'icon': Icons.play_arrow_rounded,
         'imagePath': 'assets/images/youtube.jpg',
         'iconBg': Colors.white,
-        'iconColor': const Color(0xFFFF0000),
+        'iconColor': Color(0xFFFF0000),
         'coin': 30,
         'time': 30,
+        'category': 'movie',
       },
       {
         'name': 'Block Blast',
         'icon': Icons.grid_view_rounded,
         'imagePath': 'assets/images/block_blast.jpg',
-        'iconBg': const Color(0xFF10B981), // approximate colorful
+        'iconBg': const Color(0xFF10B981),
         'iconColor': Colors.yellow,
         'coin': 30,
         'time': 30,
@@ -80,9 +131,13 @@ class _RelaxScreenState extends State<RelaxScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        'category': 'game',
       },
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: BlocBuilder<ProfileBloc, ProfileState>(
@@ -90,16 +145,10 @@ class _RelaxScreenState extends State<RelaxScreen> {
           return SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(
-                24,
-                20,
-                24,
-                120,
-              ), // Bottom padding for navbar
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   const Center(
                     child: Text(
                       'Relax',
@@ -119,7 +168,7 @@ class _RelaxScreenState extends State<RelaxScreen> {
                         child: _buildStatCard(
                           title: 'Total Coin',
                           value: '${state.user.coins} Coin',
-                          valueColor: const Color(0xFFFBBF24), // Yellow
+                          valueColor: const Color(0xFFFBBF24),
                           iconWidget: Container(
                             width: 24,
                             height: 24,
@@ -128,11 +177,7 @@ class _RelaxScreenState extends State<RelaxScreen> {
                               shape: BoxShape.circle,
                             ),
                             child: const Center(
-                              child: Icon(
-                                Icons.star,
-                                size: 14,
-                                color: Colors.white,
-                              ),
+                              child: Icon(Icons.star, size: 14, color: Colors.white),
                             ),
                           ),
                         ),
@@ -142,20 +187,16 @@ class _RelaxScreenState extends State<RelaxScreen> {
                         child: _buildStatCard(
                           title: 'Current Streak',
                           value: '${state.user.streak} Day',
-                          valueColor: const Color(0xFFEF4444), // Red
+                          valueColor: const Color(0xFFEF4444),
                           iconWidget: Container(
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEE2E2), // Light red bg
+                              color: const Color(0xFFFEE2E2),
                               shape: BoxShape.circle,
                             ),
                             child: const Center(
-                              child: Icon(
-                                Icons.local_fire_department_rounded,
-                                size: 16,
-                                color: Color(0xFFEF4444),
-                              ),
+                              child: Icon(Icons.local_fire_department_rounded, size: 16, color: Color(0xFFEF4444)),
                             ),
                           ),
                         ),
@@ -165,7 +206,7 @@ class _RelaxScreenState extends State<RelaxScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Categories Title
+                  // Categories
                   const Text(
                     'Categories',
                     style: TextStyle(
@@ -176,36 +217,19 @@ class _RelaxScreenState extends State<RelaxScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Categories Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildCategoryItem(
-                        context,
-                        icon: Icons.music_note_outlined,
-                        label: 'Music',
-                      ),
-                      _buildCategoryItem(
-                        context,
-                        icon: Icons.movie_outlined,
-                        label: 'Movie',
-                      ),
-                      _buildCategoryItem(
-                        context,
-                        icon: Icons.sports_esports_outlined,
-                        label: 'Game',
-                      ),
-                      _buildCategoryItem(
-                        context,
-                        icon: Icons.chat_bubble_outline_rounded,
-                        label: 'Social',
-                      ),
+                      _buildCategoryItem(context, icon: Icons.music_note_outlined, label: 'Music', category: 'music'),
+                      _buildCategoryItem(context, icon: Icons.movie_outlined, label: 'Movie', category: 'movie'),
+                      _buildCategoryItem(context, icon: Icons.sports_esports_outlined, label: 'Game', category: 'game'),
+                      _buildCategoryItem(context, icon: Icons.chat_bubble_outline_rounded, label: 'Social', category: 'social'),
                     ],
                   ),
 
                   const SizedBox(height: 32),
 
-                  // Top Picks Title
+                  // Top Picks
                   const Text(
                     'Top Picks',
                     style: TextStyle(
@@ -216,14 +240,9 @@ class _RelaxScreenState extends State<RelaxScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Top Picks List
                   Column(
-                    children: List.generate(topPicks.length, (index) {
-                      return _buildTopPickItem(
-                        context,
-                        topPicks[index],
-                        state,
-                      );
+                    children: List.generate(_topPicks.length, (index) {
+                      return _buildTopPickItem(context, _topPicks[index], state);
                     }),
                   ),
                 ],
@@ -256,23 +275,9 @@ class _RelaxScreenState extends State<RelaxScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF4B5563),
-                  ),
-                ),
+                Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF4B5563))),
                 const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: valueColor,
-                  ),
-                ),
+                Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: valueColor)),
               ],
             ),
           ),
@@ -281,13 +286,17 @@ class _RelaxScreenState extends State<RelaxScreen> {
     );
   }
 
-  Widget _buildCategoryItem(BuildContext context, {required IconData icon, required String label}) {
+  Widget _buildCategoryItem(BuildContext context, {required IconData icon, required String label, required String category}) {
     return GestureDetector(
       onTap: () {
+        final apps = _appsByCategory(category);
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RelaxCategoryScreen(categoryTitle: label),
+            builder: (context) => RelaxCategoryScreen(
+              categoryTitle: label,
+              apps: apps.isNotEmpty ? apps : null,
+            ),
           ),
         );
       },
@@ -298,30 +307,19 @@ class _RelaxScreenState extends State<RelaxScreen> {
           color: const Color(0xFFF9FAFB),
           borderRadius: BorderRadius.circular(16),
         ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 28, color: const Color(0xFF1F2937)),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-        ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: const Color(0xFF1F2937)),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1F2937))),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  Widget _buildTopPickItem(
-    BuildContext context,
-    Map<String, dynamic> pick,
-    ProfileState state,
-  ) {
+  Widget _buildTopPickItem(BuildContext context, Map<String, dynamic> pick, ProfileState state) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -331,7 +329,6 @@ class _RelaxScreenState extends State<RelaxScreen> {
       ),
       child: Row(
         children: [
-          // App Logo
           Container(
             width: 48,
             height: 48,
@@ -345,95 +342,46 @@ class _RelaxScreenState extends State<RelaxScreen> {
                     borderRadius: BorderRadius.circular(12),
                     child: Image.asset(
                       pick['imagePath'],
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(pick['icon'], color: pick['iconColor'], size: 28),
-                        );
-                      },
+                      width: 48, height: 48, fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Center(child: Icon(pick['icon'], color: pick['iconColor'], size: 28)),
                     ),
                   )
-                : Center(
-                    child: Icon(pick['icon'], color: pick['iconColor'], size: 28),
-                  ),
+                : Center(child: Icon(pick['icon'], color: pick['iconColor'], size: 28)),
           ),
           const SizedBox(width: 16),
-          // App Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  pick['name'],
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2937),
-                  ),
-                ),
+                Text(pick['name'], style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    // Coin
                     Container(
-                      width: 14,
-                      height: 14,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFBBF24),
-                        shape: BoxShape.circle,
-                      ),
+                      width: 14, height: 14,
+                      decoration: const BoxDecoration(color: Color(0xFFFBBF24), shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '${pick['coin']}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4B5563),
-                      ),
-                    ),
+                    Text('${pick['coin']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF4B5563))),
                     const SizedBox(width: 12),
-                    // Clock
-                    const Icon(
-                      Icons.schedule,
-                      size: 14,
-                      color: Color(0xFF1F2937),
-                    ),
+                    const Icon(Icons.schedule, size: 14, color: Color(0xFF1F2937)),
                     const SizedBox(width: 4),
-                    Text(
-                      '${pick['time']} m',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4B5563),
-                      ),
-                    ),
+                    Text('${pick['time']} m', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF4B5563))),
                   ],
                 ),
               ],
             ),
           ),
-          // Buy Button
           GestureDetector(
-            onTap: () {
-              UnlockContentDialog.show(context, item: pick);
-            },
+            onTap: () => UnlockContentDialog.show(context, item: pick),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF7C3AED), // Purple
+                color: const Color(0xFF7C3AED),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                'Buy',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: const Text('Buy', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:application_belajar/networks/api_client.dart';
 
 /// Change Password screen matching the MindMate design.
 class ChangePasswordScreen extends StatefulWidget {
@@ -95,12 +96,34 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Logic to save password
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password changed successfully')),
-                    );
+                  onPressed: () async {
+                    final current = _currentController.text;
+                    final newPw = _newController.text;
+                    final confirm = _confirmController.text;
+                    if (current.isEmpty || newPw.isEmpty || confirm.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please fill all fields')),
+                      );
+                      return;
+                    }
+                    if (newPw != confirm) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('New passwords do not match')),
+                      );
+                      return;
+                    }
+                    final res = await ApiClient().changePassword(current, newPw, confirm);
+                    if (!context.mounted) return;
+                    if (res['status'] == 200) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Password changed successfully')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(res['message'] ?? 'Failed to change password')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7658B2),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:application_belajar/config/theme.dart';
+import 'package:application_belajar/networks/api_client.dart';
 
 /// Setting screen matching the MindMate design.
 class SettingsScreen extends StatefulWidget {
@@ -91,12 +92,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _SettingsSwitchItem(
                     label: 'Daily mood reminder',
                     value: _dailyMoodReminder,
-                    onChanged: (val) => setState(() => _dailyMoodReminder = val),
+                    onChanged: (val) {
+                      setState(() => _dailyMoodReminder = val);
+                      ApiClient().updateSettings({'daily_mood_reminder': val});
+                    },
                   ),
                   _SettingsSwitchItem(
                     label: 'Journal summary',
                     value: _journalSummary,
-                    onChanged: (val) => setState(() => _journalSummary = val),
+                    onChanged: (val) {
+                      setState(() => _journalSummary = val);
+                      ApiClient().updateSettings({'journal_summary': val});
+                    },
                     isLast: true,
                   ),
                 ],
