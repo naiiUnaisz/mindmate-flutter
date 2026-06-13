@@ -71,13 +71,14 @@ class _HomeScreenState extends State<HomeScreen> {
             context.read<TaskBloc>().add(ClearLastCompletionResult());
           }
         },
-        child: BlocBuilder<TaskBloc, TaskState>(
-          builder: (context, taskState) {
-            final profileState = context.watch<ProfileBloc>().state;
-            final completedPieces = taskState.completedTasksToday;
-            final totalPieces = 6;
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, profileState) {
+            return BlocBuilder<TaskBloc, TaskState>(
+              builder: (context, taskState) {
+                final completedPieces = taskState.completedTasksToday;
+                final totalPieces = 6;
 
-            return SafeArea(
+                return SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -193,9 +194,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
-        ),
-      ),
-    );
+        );
+      },
+    ),
+  ),
+);
   }
 
   Widget _buildEmptyState(BuildContext context) {

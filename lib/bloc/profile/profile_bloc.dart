@@ -29,6 +29,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<LogCoinTransaction>(_onLogCoinTransaction);
     on<ActivateRestDay>(_onActivateRestDay);
     on<CollectDailyPuzzle>(_onCollectDailyPuzzle);
+    on<ClearProfile>(_onClearProfile);
   }
 
   Future<void> _savePrefs(int coins, int streak, DateTime? lastDate, {DateTime? restDayDate, int? maxStreak}) async {
@@ -294,6 +295,28 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       'amount': event.amount,
     });
     emit(state.copyWith(coinHistory: history));
+  }
+
+  Future<void> _onClearProfile(ClearProfile event, Emitter<ProfileState> emit) async {
+    final prefs = await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.remove('profile_coins'),
+      prefs.remove('profile_streak'),
+      prefs.remove('profile_last_streak_date'),
+      prefs.remove('rest_day_date'),
+      prefs.remove('max_streak'),
+      prefs.remove('weekly_history'),
+      prefs.remove('collected_puzzles'),
+      prefs.remove('daily_puzzle_date'),
+    ]);
+    emit(ProfileState(
+      user: User(
+        id: const Uuid().v4(),
+        name: 'An Yujin',
+        email: 'user@example.com',
+        lastActiveDate: DateTime.now(),
+      ),
+    ));
   }
 
   String _transactionTitle(String type, int amount) {
