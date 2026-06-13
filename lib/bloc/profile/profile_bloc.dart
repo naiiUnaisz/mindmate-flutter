@@ -127,12 +127,22 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       collectedPuzzles: savedCollected.toSet(),
     ));
 
+    // Run streak expiry BEFORE API call — local streak logic is authoritative
+    if (savedLastDate != null) {
+      await _checkStreakExpiry(emit);
+    }
+
     try {
       final res = await _client.getUser();
       if (res['status'] == 200 && res['user'] != null) {
         var user = User.fromMap(res['user'] as Map<String, dynamic>);
 
-        // API is source of truth — save to local cache for offline fallback
+        // Preserve local streak (expiry already checked above)
+        user = user.copyWith(streak: state.user.streak);
+        // Keep the higher coins value
+        if (user.coins < state.user.coins) user = user.copyWith(coins: state.user.coins);
+
+        // Save merged data to per-user cache
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt(_prefKey('profile_coins'), user.coins);
         await prefs.setInt(_prefKey('profile_streak'), user.streak);
@@ -145,10 +155,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       }
     } catch (_) {}
 
-    // Offline fallback: use local cache
-    if (savedLastDate != null) {
-      await _checkStreakExpiry(emit);
-    }
+    // Offline fallback: use local cache (already emitted + expiry checked above)
   }
 
   Future<void> _onUpdateUser(UpdateUser event, Emitter<ProfileState> emit) async {
