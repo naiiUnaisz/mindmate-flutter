@@ -18,12 +18,14 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -95,6 +97,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
                       const SizedBox(height: 36),
 
+                      // ── Username field ──
+                      AuthTextField(
+                        controller: _nameController,
+                        hintText: 'Username',
+                        prefixIcon: Icons.person_outline_rounded,
+                        keyboardType: TextInputType.text,
+                      ),
+
+                      const SizedBox(height: 18),
+
                       // ── Email field ──
                       AuthTextField(
                         controller: _emailController,
@@ -163,6 +175,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             text: state.status == AuthStatus.loading ? 'Loading...' : 'Sign Up',
                             onPressed: state.status == AuthStatus.loading ? null : () {
                               context.read<AuthBloc>().add(SignupSubmitted(
+                                    name: _nameController.text,
                                     email: _emailController.text,
                                     password: _passwordController.text,
                                     confirmPassword: _confirmPasswordController.text,

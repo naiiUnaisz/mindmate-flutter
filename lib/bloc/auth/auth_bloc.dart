@@ -63,7 +63,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onSignupSubmitted(SignupSubmitted event, Emitter<AuthState> emit) async {
-    if (event.email.trim().isEmpty || event.password.trim().isEmpty || event.confirmPassword.trim().isEmpty) {
+    if (event.name.trim().isEmpty || event.email.trim().isEmpty || event.password.trim().isEmpty || event.confirmPassword.trim().isEmpty) {
       emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Silakan isi semua field'));
       return;
     }
@@ -71,10 +71,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Password tidak cocok'));
       return;
     }
+    if (event.name.trim().isEmpty) {
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Silakan masukkan nama'));
+      return;
+    }
     emit(state.copyWith(status: AuthStatus.loading));
     try {
-      final name = event.email.trim().split('@').first;
-      final res = await _client.register(name, event.email.trim(), event.password);
+      final res = await _client.register(event.name.trim(), event.email.trim(), event.password);
       if (res['status'] == 201) {
         emit(state.copyWith(status: AuthStatus.signupSuccess));
       } else {

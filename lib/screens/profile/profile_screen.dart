@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/config/theme.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
+import 'package:application_belajar/bloc/profile/profile_event.dart';
 import 'package:application_belajar/networks/api_client.dart';
 import 'package:application_belajar/bloc/task/task_bloc.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
@@ -148,7 +149,7 @@ class _ProfileCard extends StatelessWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: Container(color: const Color(0xFFF3E8FF), child: const Icon(Icons.person, size: 36, color: Color(0xFF7658B2))),
+                      child: Container(color: const Color(0xFFF3E8FF), child: const Icon(Icons.person, size: 36, color: Color(0xFF7C3AED))),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -158,7 +159,7 @@ class _ProfileCard extends StatelessWidget {
                       children: [
                         Text(user.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
                         const SizedBox(height: 2),
-                        Text(user.email, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.primary.withValues(alpha: 0.7))),
+                        Text(user.username.isNotEmpty ? '@${user.username}' : '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.primary.withValues(alpha: 0.7))),
                       ],
                     ),
                   ),
@@ -179,11 +180,20 @@ class _ProfileCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  _StatColumn(value: 'Female', label: 'GENDER'),
+                  _StatColumn(
+                    value: user.gender.isNotEmpty ? user.gender : '-',
+                    label: 'GENDER',
+                  ),
                   const SizedBox(width: 24),
-                  _StatColumn(value: '23', label: 'AGE'),
+                  _StatColumn(
+                    value: user.age > 0 ? user.age.toString() : '-',
+                    label: 'AGE',
+                  ),
                   const SizedBox(width: 24),
-                  _StatColumn(value: '01/09/03', label: 'BIRTHDAY'),
+                  _StatColumn(
+                    value: user.birthdayFormatted,
+                    label: 'BIRTHDAY',
+                  ),
                 ],
               ),
             ),
@@ -338,14 +348,16 @@ class _LogoutDialog extends StatelessWidget {
                       child: ElevatedButton(
                           onPressed: () async {
                             context.read<TaskBloc>().add(ClearTasks());
+                            context.read<ProfileBloc>().add(ClearProfile());
                             final prefs = await SharedPreferences.getInstance();
                             await prefs.remove('current_user_email');
                             if (!context.mounted) return;
-                            ApiClient().apiLogout();
+                            await ApiClient().apiLogout();
+                            if (!context.mounted) return;
                             Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7658B2),
+                      backgroundColor: const Color(0xFF7C3AED),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

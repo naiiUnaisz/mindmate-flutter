@@ -1,9 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:application_belajar/networks/api_client.dart';
+import 'package:application_belajar/config/theme.dart';
 
-/// Trash screen representing an empty state.
-/// Matches the MindMate "No Rubbish Yet" design.
-class TrashScreen extends StatelessWidget {
+class TrashScreen extends StatefulWidget {
   const TrashScreen({super.key});
+
+  @override
+  State<TrashScreen> createState() => _TrashScreenState();
+}
+
+class _TrashScreenState extends State<TrashScreen> {
+  final ApiClient _client = ApiClient();
+  List<Map<String, dynamic>> _items = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrash();
+  }
+
+  Future<void> _loadTrash() async {
+    setState(() => _loading = true);
+    try {
+      final res = await _client.getTrash();
+      if (res['status'] == 200 && res['data'] != null) {
+        final list = (res['data'] as List).cast<Map<String, dynamic>>();
+        setState(() {
+          _items = list;
+          _loading = false;
+        });
+        return;
+      }
+    } catch (_) {}
+    setState(() => _loading = false);
+  }
+
+  Future<void> _restore(String taskId) async {
+    try {
+      await _client.restoreFromTrash(taskId);
+      setState(() => _items.removeWhere((i) => i['id'].toString() == taskId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Task restored')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to restore task')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deletePermanent(String taskId) async {
+    try {
+      await _client.deleteFromTrash(taskId);
+      setState(() => _items.removeWhere((i) => i['id'].toString() == taskId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Task permanently deleted')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete task')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,118 +79,104 @@ class TrashScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ═══════════════════════════════════════
-            // HEADER: Back + Title
-            // ═══════════════════════════════════════
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 12, 20, 16),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: Color(0xFF1F2937),
-                    ),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Color(0xFF1F2937)),
                   ),
                   const Expanded(
                     child: Center(
                       child: Text(
                         'Trash',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1F2937),
-                        ),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48), // balance the back button
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
 
-            // ═══════════════════════════════════════
-            // EMPTY STATE (Mascot + Text)
-            // ═══════════════════════════════════════
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Mascot Stack
-                    SizedBox(
-                      width: 280,
-                      height: 280,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        clipBehavior: Clip.none,
-                        children: [
-                          // ── Main Mascot CustomPaint ──
-                          CustomPaint(
-                            size: const Size(200, 200),
-                            painter: _ConfusedMascotPainter(),
-                          ),
-                          
-                          // ── Floating Question Marks ──
-                          // Left big question mark
-                          const Positioned(
-                            left: 10,
-                            top: 80,
-                            child: Text(
-                              '?',
-                              style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF5B3482), // Dark purple
-                              ),
-                            ),
-                          ),
-                          
-                          // Right small question marks
-                          const Positioned(
-                            right: 25,
-                            top: 110,
-                            child: Text(
-                              '??',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF5B3482),
-                              ),
-                            ),
-                          ),
-                          
-                          // Question mark inside the bubble
-                          const Positioned(
-                            right: 65,
-                            top: 30,
-                            child: Icon(
-                              Icons.extension,
-                              size: 16,
-                              color: Color(0xFFE9D5FF),
-                            ), // Close enough to the white star/blob in the design
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'No Rubbish Yet',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFA78BFA),
-                      ),
-                    ),
-                    const SizedBox(height: 80), // Offset slightly upwards
-                  ],
+            if (_loading)
+              const Expanded(child: Center(child: CircularProgressIndicator()))
+            else if (_items.isEmpty)
+              _buildEmptyState()
+            else
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _items.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                  itemBuilder: (context, index) {
+                    final item = _items[index];
+                    final title = item['title'] ?? item['name'] ?? 'Unknown';
+                    final id = item['id'].toString();
+                    return _TrashItem(
+                      title: title,
+                      onRestore: () => _restore(id),
+                      onDelete: () => _deletePermanent(id),
+                    );
+                  },
                 ),
               ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Expanded(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 280,
+              height: 280,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  CustomPaint(size: const Size(200, 200), painter: _ConfusedMascotPainter()),
+                  const Positioned(left: 10, top: 80, child: Text('?', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Color(0xFF5B3482)))),
+                  const Positioned(right: 25, top: 110, child: Text('??', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Color(0xFF5B3482)))),
+                  const Positioned(right: 65, top: 30, child: Icon(Icons.extension, size: 16, color: Color(0xFFE9D5FF))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text('No Rubbish Yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFFA78BFA))),
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TrashItem extends StatelessWidget {
+  final String title;
+  final VoidCallback onRestore;
+  final VoidCallback onDelete;
+
+  const _TrashItem({required this.title, required this.onRestore, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF374151))),
+          ),
+          IconButton(icon: const Icon(Icons.restore_from_trash, size: 20, color: AppColors.primary), onPressed: onRestore),
+          IconButton(icon: const Icon(Icons.delete_forever, size: 20, color: Color(0xFFEF4444)), onPressed: onDelete),
+        ],
       ),
     );
   }

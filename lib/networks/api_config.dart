@@ -11,6 +11,7 @@ class ApiConfig {
 
   // ── User / Profile ──
   static const String user = '/user';
+  static const String userUpdate = '/user/update';
 
   // ── Tasks (RESTful resource) ──
   static const String tasks = '/tasks';

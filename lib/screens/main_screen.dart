@@ -74,7 +74,7 @@ class MainScreenState extends State<MainScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF9B7FE6), Color(0xFF7658B2)],
+          colors: [Color(0xFF9B7FE6), Color(0xFF7C3AED)],
         ),
         boxShadow: [
           BoxShadow(
@@ -144,7 +144,7 @@ class MainScreenState extends State<MainScreen> {
                     iconWidget: Icon(
                       Icons.insights_rounded,
                       color: _selectedIndex == 2
-                          ? const Color(0xFF7658B2)
+                          ? const Color(0xFF7C3AED)
                           : const Color(0xFF1F2937),
                       size: 26,
                     ),
@@ -156,7 +156,7 @@ class MainScreenState extends State<MainScreen> {
                     iconWidget: Icon(
                       Icons.person_rounded,
                       color: _selectedIndex == 3
-                          ? const Color(0xFF7658B2)
+                          ? const Color(0xFF7C3AED)
                           : const Color(0xFF1F2937),
                       size: 26,
                     ),
@@ -176,7 +176,7 @@ class MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildPuzzleHomeIcon({required bool isActive}) {
-    final color = isActive ? const Color(0xFF7658B2) : const Color(0xFF1F2937);
+    final color = isActive ? const Color(0xFF7C3AED) : const Color(0xFF1F2937);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -192,7 +192,7 @@ class MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildRelaxIcon({required bool isActive}) {
-    final color = isActive ? const Color(0xFF7658B2) : const Color(0xFF1F2937);
+    final color = isActive ? const Color(0xFF7C3AED) : const Color(0xFF1F2937);
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -254,7 +254,7 @@ class _NavItem extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                     color: isActive
-                        ? const Color(0xFF7658B2)
+                        ? const Color(0xFF7C3AED)
                         : const Color(0xFF1F2937),
                   ),
                 ),
@@ -264,7 +264,7 @@ class _NavItem extends StatelessWidget {
                     height: 3,
                     width: 20,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7658B2),
+                      color: const Color(0xFF7C3AED),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

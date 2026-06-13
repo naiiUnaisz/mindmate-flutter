@@ -63,6 +63,10 @@ class UnlockPuzzle extends ProfileEvent {
 
 class ActivateRestDay extends ProfileEvent {}
 
+class DeactivateRestDay extends ProfileEvent {}
+
+class ClearProfile extends ProfileEvent {}
+
 class LogCoinTransaction extends ProfileEvent {
   final String type;
   final String title;

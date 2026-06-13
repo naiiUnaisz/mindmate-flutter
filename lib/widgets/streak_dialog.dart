@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-Future<void> showStreakDialog(BuildContext context) async {
+Future<void> showStreakDialog(BuildContext context, {int streakCount = 1}) async {
   await showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => const _StreakDialog(),
+    builder: (ctx) => _StreakDialog(streakCount: streakCount),
   );
 }
 
 class _StreakDialog extends StatelessWidget {
-  const _StreakDialog();
+  final int streakCount;
+  const _StreakDialog({this.streakCount = 1});
 
   @override
   Widget build(BuildContext context) {
@@ -37,20 +38,24 @@ class _StreakDialog extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'First Step!', // Fixed typo from design (Fisrt -> First)
+                Text(
+                  streakCount > 1
+                      ? 'Streak: $streakCount Days!'
+                      : 'First Step!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF111827),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  "You've started your streak today.\nLet's keep it going!",
+                Text(
+                  streakCount > 1
+                      ? 'Amazing! $streakCount days streak!\nKeep the momentum going!'
+                      : "You've started your streak today.\nLet's keep it going!",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF7C3AED),
                     fontWeight: FontWeight.w500,

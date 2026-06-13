@@ -9,6 +9,9 @@ import 'package:application_belajar/networks/api_client.dart';
 
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final ApiClient _client = ApiClient();
+  String? _userEmail;
+
+  String _prefKey(String key) => _userEmail != null ? '${_userEmail}_$key' : key;
 
   TaskBloc() : super(const TaskState()) {
     on<LoadTasks>(_onLoadTasks);
@@ -49,14 +52,25 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             .toList();
 
         final prefs = await SharedPreferences.getInstance();
-        final lastDate = prefs.getString('daily_puzzle_date');
+        final rawEmail = prefs.getString('current_user_email');
+        _userEmail = rawEmail?.toLowerCase();
+
+        // daily_puzzle_date: lowercase prefixed → original-case prefixed
+        final lastDate = prefs.getString(_prefKey('daily_puzzle_date')) ??
+            (rawEmail != null && rawEmail != _userEmail ? prefs.getString('${rawEmail}_daily_puzzle_date') : null);
         final today = DateTime.now().toIso8601String().substring(0, 10);
+
+        // Migration: original-case prefixed daily_puzzle_date → lowercase
+        if (rawEmail != null && rawEmail != _userEmail && prefs.getString('${rawEmail}_daily_puzzle_date') != null && prefs.getString(_prefKey('daily_puzzle_date')) == null && lastDate != null) {
+          await prefs.setString(_prefKey('daily_puzzle_date'), lastDate);
+          await prefs.remove('${rawEmail}_daily_puzzle_date');
+        }
 
         List<Task> daily;
         int completedCount;
 
         if (lastDate != today) {
-          await prefs.setString('daily_puzzle_date', today);
+          await prefs.setString(_prefKey('daily_puzzle_date'), today);
           daily = list
               .where((t) => !t.isCompleted)
               .take(AppConstants.maxDailyPuzzleTasks)
@@ -252,6 +266,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
   void _onClearTasks(ClearTasks event, Emitter<TaskState> emit) {
+    _userEmail = null;
     emit(const TaskState());
   }
 }

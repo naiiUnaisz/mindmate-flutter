@@ -30,18 +30,20 @@ class LoginSubmitted extends AuthEvent {
 }
 
 class SignupSubmitted extends AuthEvent {
+  final String name;
   final String email;
   final String password;
   final String confirmPassword;
 
   const SignupSubmitted({
+    required this.name,
     required this.email,
     required this.password,
     required this.confirmPassword,
   });
 
   @override
-  List<Object?> get props => [email, password, confirmPassword];
+  List<Object?> get props => [name, email, password, confirmPassword];
 }
 
 class ForgotPasswordSubmitted extends AuthEvent {

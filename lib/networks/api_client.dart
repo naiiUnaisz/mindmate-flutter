@@ -69,6 +69,7 @@ class ApiClient {
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
       body: jsonEncode({
         'name': name,
+        'username': name,
         'email': email,
         'password': password,
       }),
@@ -132,6 +133,30 @@ class ApiClient {
     );
     final body = _parseBody(res);
     return {'status': res.statusCode, 'user': body};
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String name,
+    String username = '',
+    required String gender,
+    required DateTime? dateOfBirth,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'username': username,
+      'gender': gender,
+    };
+    if (dateOfBirth != null) {
+      body['date_of_birth'] =
+          '${dateOfBirth.year}-${dateOfBirth.month.toString().padLeft(2, '0')}-${dateOfBirth.day.toString().padLeft(2, '0')}';
+    }
+    final res = await _client.put(
+      _uri(ApiConfig.userUpdate),
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+    final result = _parseBody(res);
+    return {'status': res.statusCode, ...result};
   }
 
   // ── Tasks ──
