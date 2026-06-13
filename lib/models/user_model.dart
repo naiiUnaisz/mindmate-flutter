@@ -1,6 +1,7 @@
 class User {
   final String id;
   final String name;
+  final String username;
   final String email;
   final int coins;
   final int earnedCoins;
@@ -8,22 +9,44 @@ class User {
   final int streak;
   final DateTime lastActiveDate;
   final int totalTasksCompleted;
+  final String gender;
+  final DateTime? dateOfBirth;
 
   User({
     required this.id,
     required this.name,
     required this.email,
+    this.username = '',
     this.coins = 0,
     this.earnedCoins = 0,
     this.spentCoins = 0,
     this.streak = 0,
     required this.lastActiveDate,
     this.totalTasksCompleted = 0,
+    this.gender = '',
+    this.dateOfBirth,
   });
+
+  int get age {
+    if (dateOfBirth == null) return 0;
+    final now = DateTime.now();
+    int age = now.year - dateOfBirth!.year;
+    if (now.month < dateOfBirth!.month ||
+        (now.month == dateOfBirth!.month && now.day < dateOfBirth!.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  String get birthdayFormatted {
+    if (dateOfBirth == null) return '-';
+    return '${dateOfBirth!.day.toString().padLeft(2, '0')}/${dateOfBirth!.month.toString().padLeft(2, '0')}/${dateOfBirth!.year.toString().padLeft(2, '0')}';
+  }
 
   User copyWith({
     String? id,
     String? name,
+    String? username,
     String? email,
     int? coins,
     int? earnedCoins,
@@ -31,10 +54,13 @@ class User {
     int? streak,
     DateTime? lastActiveDate,
     int? totalTasksCompleted,
+    String? gender,
+    DateTime? dateOfBirth,
   }) {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
+      username: username ?? this.username,
       email: email ?? this.email,
       coins: coins ?? this.coins,
       earnedCoins: earnedCoins ?? this.earnedCoins,
@@ -42,6 +68,8 @@ class User {
       streak: streak ?? this.streak,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       totalTasksCompleted: totalTasksCompleted ?? this.totalTasksCompleted,
+      gender: gender ?? this.gender,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
   }
 
@@ -49,6 +77,7 @@ class User {
     return {
       'id': id,
       'name': name,
+      'username': username,
       'email': email,
       'coins': coins,
       'earnedCoins': earnedCoins,
@@ -56,6 +85,8 @@ class User {
       'streak': streak,
       'lastActiveDate': lastActiveDate.toIso8601String(),
       'totalTasksCompleted': totalTasksCompleted,
+      'gender': gender,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
     };
   }
 
@@ -72,6 +103,11 @@ class User {
           ? DateTime.parse(map['last_active_date'])
           : DateTime.now(),
       totalTasksCompleted: map['total_tasks_completed'] ?? 0,
+      username: map['username'] ?? '',
+      gender: map['gender'] ?? '',
+      dateOfBirth: map['date_of_birth'] != null
+          ? DateTime.tryParse(map['date_of_birth'])
+          : null,
     );
   }
 }

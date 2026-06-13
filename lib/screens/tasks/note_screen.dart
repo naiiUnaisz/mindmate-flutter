@@ -7,7 +7,10 @@ import 'package:application_belajar/bloc/task/task_bloc.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_event.dart';
+
 import 'package:application_belajar/widgets/reward_dialog.dart';
+import 'package:application_belajar/networks/api_client.dart';
+import 'package:uuid/uuid.dart';
 
 /// Note screen with "To do List" / "Default Task" tabs.
 /// Users can add notes via the purple FAB which opens a create note sheet.
@@ -36,9 +39,34 @@ class _NoteScreenState extends State<NoteScreen> {
   }
 
   Future<void> _loadData() async {
+    try {
+      final res = await ApiClient().getNotes();
+      if (res['status'] == 200 && res['data'] != null) {
+        final list = (res['data'] as List).map((e) {
+          final map = e as Map<String, dynamic>;
+          return _NoteItem(
+            id: map['id']?.toString(),
+            title: map['title'] ?? '',
+            subtitle: map['content'] ?? '',
+            isCompleted: map['is_completed'] ?? false,
+          );
+        }).toList();
+        setState(() {
+          _toDoItems
+            ..clear()
+            ..addAll(list);
+          _defaultItems.clear();
+        });
+        _saveData();
+        return;
+      }
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
-    final todoJson = prefs.getString('note_todo_items');
-    final defaultJson = prefs.getString('note_default_items');
+    final email = prefs.getString('current_user_email')?.toLowerCase();
+    final prefix = email != null ? '${email}_' : '';
+    final todoJson = prefs.getString('${prefix}note_todo_items');
+    final defaultJson = prefs.getString('${prefix}note_default_items');
     setState(() {
       if (todoJson != null) {
         final list = jsonDecode(todoJson) as List;
@@ -57,33 +85,42 @@ class _NoteScreenState extends State<NoteScreen> {
 
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('current_user_email')?.toLowerCase();
+    final prefix = email != null ? '${email}_' : '';
     await prefs.setString(
-      'note_todo_items',
-      jsonEncode(_toDoItems.map((e) => e.toMap()).toList()),
+        '${prefix}note_todo_items',
+        jsonEncode(_toDoItems.map((e) => e.toMap()).toList()),
     );
     await prefs.setString(
-      'note_default_items',
-      jsonEncode(_defaultItems.map((e) => e.toMap()).toList()),
+        '${prefix}note_default_items',
+        jsonEncode(_defaultItems.map((e) => e.toMap()).toList()),
     );
   }
 
-  void _addNote(String title, String subtitle) {
+  void _addNote(String title, String subtitle) async {
+    final localItem = _NoteItem(title: title, subtitle: subtitle);
     setState(() {
-      _currentItems.add(_NoteItem(title: title, subtitle: subtitle));
+      _currentItems.add(localItem);
     });
     _saveData();
-    if (_activeTab == 1) {
+    try {
+      await ApiClient().createNote(title, subtitle);
+    } catch (_) {}
+    if (_activeTab == 1 && mounted) {
       context.read<TaskBloc>().add(AddDefaultTask(title: title, description: subtitle));
     }
   }
 
-  void _deleteNote(int index) {
+  void _deleteNote(int index) async {
     final item = _currentItems[index];
     setState(() {
       _currentItems.removeAt(index);
     });
     _saveData();
-    if (_activeTab == 1) {
+    try {
+      await ApiClient().deleteNote(item.id);
+    } catch (_) {}
+    if (_activeTab == 1 && mounted) {
       context.read<TaskBloc>().add(RemoveDefaultTask(title: item.title));
     }
   }
@@ -338,15 +375,20 @@ class _NoteScreenState extends State<NoteScreen> {
           initialTitle: item.title,
           initialSubtitle: item.subtitle,
           isEdit: true,
-          onSave: (title, subtitle) {
+          onSave: (title, subtitle) async {
+            final updated = _NoteItem(
+              id: item.id,
+              title: title,
+              subtitle: subtitle,
+              isCompleted: item.isCompleted,
+            );
             setState(() {
-              _currentItems[index] = _NoteItem(
-                title: title,
-                subtitle: subtitle,
-                isCompleted: _currentItems[index].isCompleted,
-              );
+              _currentItems[index] = updated;
             });
             _saveData();
+            try {
+              await ApiClient().updateNote(updated.id, title, subtitle);
+            } catch (_) {}
           },
         );
       },
@@ -359,23 +401,27 @@ class _NoteScreenState extends State<NoteScreen> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _NoteItem {
+  final String id;
   final String title;
   final String subtitle;
   bool isCompleted;
 
   _NoteItem({
+    String? id,
     required this.title,
     required this.subtitle,
     this.isCompleted = false,
-  });
+  }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() => {
+        'id': id,
         'title': title,
         'subtitle': subtitle,
         'isCompleted': isCompleted,
       };
 
   factory _NoteItem.fromMap(Map<String, dynamic> map) => _NoteItem(
+        id: map['id'],
         title: map['title'] ?? '',
         subtitle: map['subtitle'] ?? '',
         isCompleted: map['isCompleted'] ?? false,

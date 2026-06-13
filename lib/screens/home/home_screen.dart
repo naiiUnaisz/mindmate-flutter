@@ -10,6 +10,7 @@ import 'package:application_belajar/bloc/profile/profile_event.dart';
 import 'package:application_belajar/widgets/streak_dialog.dart';
 import 'package:application_belajar/widgets/puzzle_widget.dart';
 import 'package:application_belajar/widgets/reward_dialog.dart';
+import 'package:application_belajar/widgets/restday_dialog.dart';
 import 'package:application_belajar/models/task_model.dart';
 import 'package:application_belajar/bloc/profile/profile_state.dart';
 
@@ -58,7 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
               context.read<ProfileBloc>().add(CollectDailyPuzzle(puzzleId: getDailyPuzzleId()));
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 if (!context.mounted) return;
-                await showStreakDialog(context);
+                final streak = context.read<ProfileBloc>().state.user.streak;
+                await showStreakDialog(context, streakCount: streak);
                 if (!context.mounted) return;
                 Navigator.of(context).pushNamed('/puzzle-collection');
               });
@@ -71,14 +73,15 @@ class _HomeScreenState extends State<HomeScreen> {
             context.read<TaskBloc>().add(ClearLastCompletionResult());
           }
         },
-        child: BlocBuilder<ProfileBloc, ProfileState>(
-          builder: (context, profileState) {
-            return BlocBuilder<TaskBloc, TaskState>(
-              builder: (context, taskState) {
-                final completedPieces = taskState.completedTasksToday;
-                final totalPieces = 6;
+        child: BlocBuilder<TaskBloc, TaskState>(
+          builder: (context, taskState) {
+            final profileState = context.watch<ProfileBloc>().state;
+            final completedPieces = taskState.dailyPuzzleTasks
+                .where((t) => t.isCompleted)
+                .length;
+            final totalPieces = 6;
 
-                return SafeArea(
+            return SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -88,65 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // ═══════════════════════════════════════
                     // GREETING HEADER
                     // ═══════════════════════════════════════
-                    _GreetingHeader(
-                      name: profileState.user.name,
-                      isRestDayActive: profileState.restDayDate != null &&
-                          DateTime(
-                            profileState.restDayDate!.year,
-                            profileState.restDayDate!.month,
-                            profileState.restDayDate!.day,
-                          ).isAtSameMomentAs(
-                            DateTime(
-                              DateTime.now().year,
-                              DateTime.now().month,
-                              DateTime.now().day,
-                            ),
-                          ),
-                      onRestDay: () {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            title: const Text(
-                              'Rest Day',
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            content: const Text(
-                              'Hari ini kamu tidak perlu menyelesaikan 6 task, streak tetap aman. Lanjutkan?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Batal'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  context
-                                      .read<ProfileBloc>()
-                                      .add(ActivateRestDay());
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Rest day aktif! Streak aman.'),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text('Aktifkan'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                    _GreetingHeader(name: profileState.user.name),
 
                     const SizedBox(height: 16),
 
@@ -194,11 +139,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
-        );
-      },
-    ),
-  ),
-);
+        ),
+      ),
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -298,14 +241,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _GreetingHeader extends StatelessWidget {
   final String name;
-  final bool isRestDayActive;
-  final VoidCallback? onRestDay;
 
-  const _GreetingHeader({
-    required this.name,
-    this.isRestDayActive = false,
-    this.onRestDay,
-  });
+  const _GreetingHeader({required this.name});
+
+  bool _isTodayRestDay(ProfileState state) {
+    if (state.restDayDate == null) return false;
+    final now = DateTime.now();
+    return state.restDayDate == DateTime(now.year, now.month, now.day);
+  }
 
   String _getGreeting() {
     final now = DateTime.now().toUtc().add(const Duration(hours: 7));
@@ -349,58 +292,66 @@ class _GreetingHeader extends StatelessWidget {
         ),
         Row(
           children: [
-            // Mascot Icon (Sleepy) → Rest Day button
-            GestureDetector(
-              onTap: onRestDay,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: isRestDayActive
-                      ? Border.all(color: const Color(0xFF7C3AED), width: 2)
-                      : null,
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Center(
-                      child: SizedBox(
-                        width: 42,
-                        height: 42,
-                        child: CustomPaint(
-                          painter: _MascotFacePainter(mood: 'sleepy'),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isRestDayActive
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFF8B5CF6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          isRestDayActive ? '✓' : 'z',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            height: 1.0,
+            // Mascot Icon — rest day toggle
+            BlocBuilder<ProfileBloc, ProfileState>(
+              builder: (context, state) {
+                final isRestDay = _isTodayRestDay(state);
+                return GestureDetector(
+                  onTap: () async {
+                    if (isRestDay) {
+                      context.read<ProfileBloc>().add(DeactivateRestDay());
+                    } else {
+                      final confirmed = await showRestDayDialog(context);
+                      if (confirmed == true && context.mounted) {
+                        context.read<ProfileBloc>().add(ActivateRestDay());
+                      }
+                    }
+                  },
+                  child: SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Center(
+                          child: SizedBox(
+                            width: 42,
+                            height: 42,
+                            child: CustomPaint(
+                              painter: _MascotFacePainter(
+                                mood: isRestDay ? 'sleepy' : 'happy',
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        if (isRestDay)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF8B5CF6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Text(
+                                'z',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             // Menu icon (list) → navigates to Note screen
             GestureDetector(
               onTap: () => Navigator.of(context).pushNamed('/note'),

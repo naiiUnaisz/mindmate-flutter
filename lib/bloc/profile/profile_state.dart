@@ -14,7 +14,7 @@ const List<Puzzle> allPuzzles = [
 
 int getDailyPuzzleIndex() {
   final daysSinceEpoch = DateTime.now().millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
-  return daysSinceEpoch % 7; // 0-6
+  return daysSinceEpoch % 7;
 }
 
 String getDailyPuzzleId() => 'puzzle_${getDailyPuzzleIndex() + 1}';
