@@ -57,30 +57,41 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     await prefs.setString('weekly_history', jsonEncode(encoded));
   }
 
-  void _checkStreakExpiry(Emitter<ProfileState> emit) {
+  Future<void> _checkStreakExpiry(Emitter<ProfileState> emit) async {
     final lastDate = state.lastStreakDate;
     if (lastDate == null) return;
+
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     final lastDateDay = DateTime(lastDate.year, lastDate.month, lastDate.day);
-    final diff = todayDate.difference(lastDateDay).inDays;
-    if (diff <= 1) return;
+    final daysSinceLastStreak = todayDate.difference(lastDateDay).inDays;
+
+    // Same day or yesterday → streak still alive
+    if (daysSinceLastStreak <= 1) return;
+
+    // Check rest day protection: rest day must be exactly 1 day after last streak
     final restDay = state.restDayDate;
     final isProtected = restDay != null &&
         DateTime(restDay.year, restDay.month, restDay.day)
             .difference(lastDateDay)
             .inDays ==
-            1;
+            1 &&
+        daysSinceLastStreak == 2;
+
     if (isProtected) {
+      // Rest day covers exactly 1 missed day — preserve streak & persist
       emit(state.copyWith(clearRestDayDate: true));
+      await _savePrefs(state.user.coins, state.user.streak, lastDate, restDayDate: null);
       return;
     }
+
+    // Missed more than 1 day (or rest day already used up) → reset streak
     emit(state.copyWith(
       user: state.user.copyWith(streak: 0),
       clearLastStreakDate: true,
       clearRestDayDate: true,
     ));
-    _savePrefs(state.user.coins, 0, null, restDayDate: null, maxStreak: state.maxStreak);
+    await _savePrefs(state.user.coins, 0, null, restDayDate: null, maxStreak: state.maxStreak);
   }
 
   Future<void> _onLoadProfile(LoadProfile event, Emitter<ProfileState> emit) async {
@@ -111,7 +122,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       collectedPuzzles: savedCollected.toSet(),
     ));
     if (savedLastDate != null) {
-      _checkStreakExpiry(emit);
+      await _checkStreakExpiry(emit);
     }
 
     try {
