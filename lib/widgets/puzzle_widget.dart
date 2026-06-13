@@ -13,11 +13,13 @@ import 'package:flutter/material.dart';
 class PuzzleWidget extends StatelessWidget {
   final int completedPieces;
   final int totalPieces;
+  final int puzzleIndex;
 
   const PuzzleWidget({
     super.key,
     required this.completedPieces,
     required this.totalPieces,
+    this.puzzleIndex = 1,
   });
 
   // Empty/uncompleted cell colors in the grid pattern
@@ -30,14 +32,6 @@ class PuzzleWidget extends StatelessWidget {
     Color(0xFFF0EADB), // Row 2, Col 2 — cream
     Color(0xFFE5DDF5), // Row 2, Col 3 — lavender
   ];
-
-  // Completed cell colors are no longer needed as we reveal the background
-
-
-  int get _imageIndex {
-    // 1 to 7 based on the current weekday (1=Mon, 7=Sun)
-    return ((DateTime.now().weekday - 1) % 7) + 1;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +54,7 @@ class PuzzleWidget extends StatelessWidget {
                 width: double.infinity,
                 height: double.infinity,
                 child: Image.asset(
-                  'assets/images/puzzle_$_imageIndex.png',
+                  'assets/images/puzzle_$puzzleIndex.png',
                   fit: BoxFit.cover,
                 ),
               ),

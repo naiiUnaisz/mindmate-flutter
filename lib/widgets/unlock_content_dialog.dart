@@ -398,7 +398,7 @@ class UnlockContentDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF7C3AED),
+                      color: Color(0xFF7658B2),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -410,11 +410,11 @@ class UnlockContentDialog extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF7C3AED),
+                        color: const Color(0xFF7658B2),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                            color: const Color(0xFF7658B2).withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),

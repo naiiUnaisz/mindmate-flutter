@@ -61,6 +61,8 @@ class UnlockPuzzle extends ProfileEvent {
   List<Object?> get props => [puzzleId, cost];
 }
 
+class ActivateRestDay extends ProfileEvent {}
+
 class LogCoinTransaction extends ProfileEvent {
   final String type;
   final String title;
@@ -74,4 +76,13 @@ class LogCoinTransaction extends ProfileEvent {
 
   @override
   List<Object?> get props => [type, title, amount];
+}
+
+class CollectDailyPuzzle extends ProfileEvent {
+  final String puzzleId;
+
+  const CollectDailyPuzzle({required this.puzzleId});
+
+  @override
+  List<Object?> get props => [puzzleId];
 }

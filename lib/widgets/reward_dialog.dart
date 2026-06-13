@@ -127,7 +127,7 @@ class _RewardDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C3AED),
+                      backgroundColor: const Color(0xFF7658B2),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -156,7 +156,7 @@ class _RewardDialog extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF7C3AED),
+                  color: Color(0xFF7658B2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(

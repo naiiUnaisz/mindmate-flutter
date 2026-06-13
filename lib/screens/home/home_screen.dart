@@ -11,6 +11,7 @@ import 'package:application_belajar/widgets/streak_dialog.dart';
 import 'package:application_belajar/widgets/puzzle_widget.dart';
 import 'package:application_belajar/widgets/reward_dialog.dart';
 import 'package:application_belajar/models/task_model.dart';
+import 'package:application_belajar/bloc/profile/profile_state.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,9 +55,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ));
             if (result.isStreakAchieved) {
               context.read<ProfileBloc>().add(IncrementStreak());
-              showStreakDialog(context);
+              context.read<ProfileBloc>().add(CollectDailyPuzzle(puzzleId: getDailyPuzzleId()));
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (!context.mounted) return;
+                await showStreakDialog(context);
+                if (!context.mounted) return;
+                Navigator.of(context).pushNamed('/puzzle-collection');
+              });
             } else {
-              showRewardDialog(context, coins: result.coinReward, showPuzzleReward: true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!context.mounted) return;
+                showRewardDialog(context, coins: result.coinReward, showPuzzleReward: true);
+              });
             }
             context.read<TaskBloc>().add(ClearLastCompletionResult());
           }
@@ -64,9 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: BlocBuilder<TaskBloc, TaskState>(
           builder: (context, taskState) {
             final profileState = context.watch<ProfileBloc>().state;
-            final completedPieces = taskState.dailyPuzzleTasks
-                .where((t) => t.isCompleted)
-                .length;
+            final completedPieces = taskState.completedTasksToday;
             final totalPieces = 6;
 
             return SafeArea(
@@ -79,7 +87,65 @@ class _HomeScreenState extends State<HomeScreen> {
                     // ═══════════════════════════════════════
                     // GREETING HEADER
                     // ═══════════════════════════════════════
-                    _GreetingHeader(name: profileState.user.name),
+                    _GreetingHeader(
+                      name: profileState.user.name,
+                      isRestDayActive: profileState.restDayDate != null &&
+                          DateTime(
+                            profileState.restDayDate!.year,
+                            profileState.restDayDate!.month,
+                            profileState.restDayDate!.day,
+                          ).isAtSameMomentAs(
+                            DateTime(
+                              DateTime.now().year,
+                              DateTime.now().month,
+                              DateTime.now().day,
+                            ),
+                          ),
+                      onRestDay: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            title: const Text(
+                              'Rest Day',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            content: const Text(
+                              'Hari ini kamu tidak perlu menyelesaikan 6 task, streak tetap aman. Lanjutkan?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Batal'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  context
+                                      .read<ProfileBloc>()
+                                      .add(ActivateRestDay());
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Rest day aktif! Streak aman.'),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text('Aktifkan'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
 
                     const SizedBox(height: 16),
 
@@ -99,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _PuzzleSection(
                       completedPieces: completedPieces,
                       totalPieces: totalPieces,
+                      puzzleIndex: getDailyPuzzleIndex() + 1,
                     ),
 
                     const SizedBox(height: 28),
@@ -228,8 +295,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _GreetingHeader extends StatelessWidget {
   final String name;
+  final bool isRestDayActive;
+  final VoidCallback? onRestDay;
 
-  const _GreetingHeader({required this.name});
+  const _GreetingHeader({
+    required this.name,
+    this.isRestDayActive = false,
+    this.onRestDay,
+  });
 
   String _getGreeting() {
     final now = DateTime.now().toUtc().add(const Duration(hours: 7));
@@ -273,43 +346,55 @@ class _GreetingHeader extends StatelessWidget {
         ),
         Row(
           children: [
-            // Mascot Icon (Sleepy)
-            SizedBox(
-              width: 42,
-              height: 42,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Center(
-                    child: SizedBox(
-                      width: 42,
-                      height: 42,
-                      child: CustomPaint(
-                        painter: _MascotFacePainter(mood: 'sleepy'),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF8B5CF6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Text(
-                        'z',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          height: 1.0,
+            // Mascot Icon (Sleepy) → Rest Day button
+            GestureDetector(
+              onTap: onRestDay,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: isRestDayActive
+                      ? Border.all(color: const Color(0xFF7C3AED), width: 2)
+                      : null,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Center(
+                      child: SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: CustomPaint(
+                          painter: _MascotFacePainter(mood: 'sleepy'),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isRestDayActive
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF8B5CF6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          isRestDayActive ? '✓' : 'z',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -440,10 +525,12 @@ class _StatChip extends StatelessWidget {
 class _PuzzleSection extends StatelessWidget {
   final int completedPieces;
   final int totalPieces;
+  final int puzzleIndex;
 
   const _PuzzleSection({
     required this.completedPieces,
     required this.totalPieces,
+    this.puzzleIndex = 1,
   });
 
   @override
@@ -486,6 +573,7 @@ class _PuzzleSection extends StatelessWidget {
         PuzzleWidget(
           completedPieces: completedPieces,
           totalPieces: totalPieces,
+          puzzleIndex: puzzleIndex,
         ),
 
         const SizedBox(height: 12),

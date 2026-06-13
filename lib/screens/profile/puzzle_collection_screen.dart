@@ -1,19 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
 import 'package:application_belajar/models/puzzle_model.dart';
+import 'package:application_belajar/bloc/profile/profile_state.dart';
 import 'package:application_belajar/screens/profile/puzzle_detail_screen.dart';
-
-const List<Puzzle> allPuzzles = [
-  Puzzle(id: 'puzzle_1', title: 'Winter Cabin', description: 'A cozy house blanketed in pristine white snow.', assetPath: 'assets/images/puzzle_1.png', coinCost: 50),
-  Puzzle(id: 'puzzle_2', title: 'Lakeside Modern', description: 'A sleek modern house resting by a tranquil lake.', assetPath: 'assets/images/puzzle_2.png', coinCost: 75),
-  Puzzle(id: 'puzzle_3', title: 'Misty Pine Forest', description: 'Tall pines silhouetted in a soft lavender mist.', assetPath: 'assets/images/puzzle_3.png', coinCost: 100),
-  Puzzle(id: 'puzzle_4', title: 'Purple Peaks', description: 'Majestic mountains rising above the purple clouds.', assetPath: 'assets/images/puzzle_4.png', coinCost: 100),
-  Puzzle(id: 'puzzle_5', title: 'Ice River Valley', description: 'A winding frozen river through a snowy mountain pass.', assetPath: 'assets/images/puzzle_5.png', coinCost: 120),
-  Puzzle(id: 'puzzle_6', title: 'Spring Meadow', description: 'Green hills and a winding path in a beautiful valley.', assetPath: 'assets/images/puzzle_6.png', coinCost: 150),
-  Puzzle(id: 'puzzle_7', title: 'Balloon Festival', description: 'Colorful hot-air balloons floating through a pink sky.', assetPath: 'assets/images/puzzle_7.png', coinCost: 200),
-];
 
 /// Puzzle Collection screen matching the MindMate UI design.
 ///

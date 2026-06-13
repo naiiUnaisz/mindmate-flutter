@@ -147,7 +147,7 @@ class _ProfileCard extends StatelessWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: Container(color: const Color(0xFFF3E8FF), child: const Icon(Icons.person, size: 36, color: Color(0xFF7C3AED))),
+                      child: Container(color: const Color(0xFFF3E8FF), child: const Icon(Icons.person, size: 36, color: Color(0xFF7658B2))),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -335,16 +335,13 @@ class _LogoutDialog extends StatelessWidget {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () async {
-                          final taskBloc = context.read<TaskBloc>();
-                          final navigator = Navigator.of(context);
-                          await ApiClient().apiLogout();
-                          taskBloc.add(ClearTasks());
-                          navigator.pop();
-                          navigator.pushReplacementNamed('/login');
+                        onPressed: () {
+                          context.read<TaskBloc>().add(ClearTasks());
+                          ApiClient().apiLogout();
+                          Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
                         },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C3AED),
+                      backgroundColor: const Color(0xFF7658B2),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

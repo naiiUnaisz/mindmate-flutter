@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
 import 'package:application_belajar/bloc/task/task_state.dart';
 import 'package:application_belajar/models/task_model.dart';
@@ -46,10 +47,37 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         final list = (res['data'] as List)
             .map((e) => Task.fromMap(e as Map<String, dynamic>))
             .toList();
-        final daily = state.dailyPuzzleTasks.isNotEmpty
-            ? state.dailyPuzzleTasks
-            : _buildDailyFrom(list);
-        final completedCount = daily.where((t) => t.isCompleted).length;
+
+        final prefs = await SharedPreferences.getInstance();
+        final lastDate = prefs.getString('daily_puzzle_date');
+        final today = DateTime.now().toIso8601String().substring(0, 10);
+
+        List<Task> daily;
+        int completedCount;
+
+        if (lastDate != today) {
+          await prefs.setString('daily_puzzle_date', today);
+          daily = list
+              .where((t) => !t.isCompleted)
+              .take(AppConstants.maxDailyPuzzleTasks)
+              .map((t) => Task(
+                    id: t.id,
+                    title: t.title,
+                    description: t.description,
+                    deadline: DateTime.now(),
+                    isCompleted: t.isCompleted,
+                    createdAt: DateTime.now(),
+                    coinReward: t.coinReward,
+                  ))
+              .toList();
+          completedCount = 0;
+        } else {
+          daily = state.dailyPuzzleTasks.isNotEmpty
+              ? state.dailyPuzzleTasks
+              : _buildDailyFrom(list);
+          completedCount = daily.where((t) => t.isCompleted).length;
+        }
+
         emit(state.copyWith(
           tasks: list,
           dailyPuzzleTasks: daily,
@@ -101,6 +129,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
   Future<void> _onDeleteTask(DeleteTask event, Emitter<TaskState> emit) async {
+    final task = state.tasks.where((t) => t.id == event.taskId).firstOrNull;
+    if (task != null && task.isCompleted) return;
     emit(state.copyWith(
       tasks: state.tasks.where((t) => t.id != event.taskId).toList(),
       dailyPuzzleTasks:

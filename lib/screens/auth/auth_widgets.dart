@@ -296,14 +296,14 @@ class AuthPrimaryButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF9B7FE6), Color(0xFF7C3AED)],
+            colors: [Color(0xFF9B7FE6), Color(0xFF7658B2)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+              color: const Color(0xFF7658B2).withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -359,11 +359,11 @@ class AuthOutlinedButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFF7C3AED), width: 1.5),
+          side: const BorderSide(color: Color(0xFF7658B2), width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(26),
           ),
-          foregroundColor: const Color(0xFF7C3AED),
+          foregroundColor: const Color(0xFF7658B2),
         ),
         child: Text(
           text,

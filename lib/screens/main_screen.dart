@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:application_belajar/config/theme.dart';
 import 'package:application_belajar/screens/home/home_screen.dart';
 import 'package:application_belajar/screens/relax/relax_screen.dart';
 import 'package:application_belajar/screens/insights/insights_screen.dart';
 import 'package:application_belajar/screens/profile/profile_screen.dart';
+import 'package:application_belajar/bloc/task/task_bloc.dart';
+import 'package:application_belajar/utils/constants.dart';
 
 /// Main screen with custom bottom navigation bar matching the MindMate design.
 ///
@@ -17,10 +20,10 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen> createState() => MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
@@ -30,7 +33,18 @@ class _MainScreenState extends State<MainScreen> {
     const ProfileScreen(),
   ];
 
+  void switchToTab(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
   void _openAddTask() {
+    final taskState = context.read<TaskBloc>().state;
+    if (taskState.dailyPuzzleTasks.length >= AppConstants.maxDailyPuzzleTasks) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('To do hari ini sudah penuh!')),
+      );
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -60,7 +74,7 @@ class _MainScreenState extends State<MainScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF9B7FE6), Color(0xFF7C3AED)],
+          colors: [Color(0xFF9B7FE6), Color(0xFF7658B2)],
         ),
         boxShadow: [
           BoxShadow(
@@ -130,7 +144,7 @@ class _MainScreenState extends State<MainScreen> {
                     iconWidget: Icon(
                       Icons.insights_rounded,
                       color: _selectedIndex == 2
-                          ? const Color(0xFF7C3AED)
+                          ? const Color(0xFF7658B2)
                           : const Color(0xFF1F2937),
                       size: 26,
                     ),
@@ -142,7 +156,7 @@ class _MainScreenState extends State<MainScreen> {
                     iconWidget: Icon(
                       Icons.person_rounded,
                       color: _selectedIndex == 3
-                          ? const Color(0xFF7C3AED)
+                          ? const Color(0xFF7658B2)
                           : const Color(0xFF1F2937),
                       size: 26,
                     ),
@@ -162,7 +176,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildPuzzleHomeIcon({required bool isActive}) {
-    final color = isActive ? const Color(0xFF7C3AED) : const Color(0xFF1F2937);
+    final color = isActive ? const Color(0xFF7658B2) : const Color(0xFF1F2937);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -178,7 +192,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildRelaxIcon({required bool isActive}) {
-    final color = isActive ? const Color(0xFF7C3AED) : const Color(0xFF1F2937);
+    final color = isActive ? const Color(0xFF7658B2) : const Color(0xFF1F2937);
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -240,7 +254,7 @@ class _NavItem extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                     color: isActive
-                        ? const Color(0xFF7C3AED)
+                        ? const Color(0xFF7658B2)
                         : const Color(0xFF1F2937),
                   ),
                 ),
@@ -250,7 +264,7 @@ class _NavItem extends StatelessWidget {
                     height: 3,
                     width: 20,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED),
+                      color: const Color(0xFF7658B2),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),

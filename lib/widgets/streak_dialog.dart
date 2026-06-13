@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-void showStreakDialog(BuildContext context) {
-  showDialog(
+Future<void> showStreakDialog(BuildContext context) async {
+  await showDialog(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => const _StreakDialog(),
@@ -85,7 +85,7 @@ class _StreakDialog extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6D28D9), // Dark purple
+                      backgroundColor: const Color(0xFF7658B2),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -114,7 +114,7 @@ class _StreakDialog extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF7C3AED),
+                  color: Color(0xFF7658B2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
