@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/config/theme.dart';
 import 'package:application_belajar/networks/api_client.dart';
 
@@ -13,6 +14,29 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _dailyMoodReminder = false;
   bool _journalSummary = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('current_user_email')?.toLowerCase();
+    final prefix = email != null ? '${email}_' : '';
+    setState(() {
+      _dailyMoodReminder = prefs.getBool('${prefix}daily_mood_reminder') ?? false;
+      _journalSummary = prefs.getBool('${prefix}journal_summary') ?? false;
+    });
+  }
+
+  Future<void> _saveSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('current_user_email')?.toLowerCase();
+    final prefKey = email != null ? '${email}_$key' : key;
+    await prefs.setBool(prefKey, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: _dailyMoodReminder,
                     onChanged: (val) {
                       setState(() => _dailyMoodReminder = val);
+                      _saveSetting('daily_mood_reminder', val);
                       ApiClient().updateSettings({'daily_mood_reminder': val});
                     },
                   ),
@@ -102,6 +127,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: _journalSummary,
                     onChanged: (val) {
                       setState(() => _journalSummary = val);
+                      _saveSetting('journal_summary', val);
                       ApiClient().updateSettings({'journal_summary': val});
                     },
                     isLast: true,

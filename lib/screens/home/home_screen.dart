@@ -13,6 +13,9 @@ import 'package:application_belajar/widgets/reward_dialog.dart';
 import 'package:application_belajar/widgets/restday_dialog.dart';
 import 'package:application_belajar/models/task_model.dart';
 import 'package:application_belajar/bloc/profile/profile_state.dart';
+import 'package:application_belajar/bloc/mood/mood_bloc.dart';
+import 'package:application_belajar/bloc/mood/mood_event.dart';
+import 'package:application_belajar/bloc/mood/mood_state.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,9 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final taskState = context.read<TaskBloc>().state;
-      if (!taskState.hasAskedMoodToday) {
-        context.read<TaskBloc>().add(SetMoodAsked());
+      // If already loaded and missing mood, show it
+      final moodState = context.read<MoodBloc>().state;
+      if (moodState.status == MoodStatus.success && moodState.todayMood == null) {
         _showMoodDialog();
       }
     });
@@ -46,17 +49,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: BlocListener<TaskBloc, TaskState>(
-        listener: (context, taskState) {
-          final result = taskState.lastCompletionResult;
-          if (result != null) {
-            context.read<ProfileBloc>().add(EarnCoins(
-              amount: result.coinReward,
-              reason: 'task',
-            ));
-            if (result.isStreakAchieved) {
+      body: BlocListener<MoodBloc, MoodState>(
+        listener: (context, moodState) {
+          if (moodState.status == MoodStatus.success && moodState.todayMood == null) {
+            _showMoodDialog();
+          }
+        },
+        child: BlocListener<TaskBloc, TaskState>(
+          listener: (context, taskState) {
+            final result = taskState.lastCompletionResult;
+            if (result != null) {
+              context.read<ProfileBloc>().add(
+                EarnCoins(amount: result.coinReward, reason: 'task'),
+              );
+              if (result.isStreakAchieved) {
               context.read<ProfileBloc>().add(IncrementStreak());
-              context.read<ProfileBloc>().add(CollectDailyPuzzle(puzzleId: getDailyPuzzleId()));
+              context.read<ProfileBloc>().add(
+                CollectDailyPuzzle(puzzleId: getDailyPuzzleId()),
+              );
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 if (!context.mounted) return;
                 final streak = context.read<ProfileBloc>().state.user.streak;
@@ -67,7 +77,11 @@ class _HomeScreenState extends State<HomeScreen> {
             } else {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!context.mounted) return;
-                showRewardDialog(context, coins: result.coinReward, showPuzzleReward: true);
+                showRewardDialog(
+                  context,
+                  coins: result.coinReward,
+                  showPuzzleReward: true,
+                );
               });
             }
             context.read<TaskBloc>().add(ClearLastCompletionResult());
@@ -140,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
+      ),
       ),
     );
   }
@@ -253,7 +268,7 @@ class _GreetingHeader extends StatelessWidget {
   String _getGreeting() {
     final now = DateTime.now().toUtc().add(const Duration(hours: 7));
     final hour = now.hour;
-    
+
     if (hour >= 0 && hour < 12) {
       return 'Good Morning ☀️';
     } else if (hour >= 12 && hour < 18) {
@@ -268,27 +283,32 @@ class _GreetingHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hi, $name',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hi, $name',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _getGreeting(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFF6B7280),
+              const SizedBox(height: 4),
+              Text(
+                _getGreeting(),
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF6B7280),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         Row(
           children: [
@@ -444,27 +464,31 @@ class _StatChip extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor, size: 20),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF9CA3AF),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF9CA3AF),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: valueColor,
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -675,6 +699,8 @@ class _TaskItem extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -685,6 +711,8 @@ class _TaskItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                     style: TextStyle(
                       fontSize: 12,
                       color: isCompleted
@@ -815,17 +843,25 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   void _handleSave() {
     final taskBloc = context.read<TaskBloc>();
     if (widget.taskToEdit != null) {
-      taskBloc.add(UpdateTask(
-        taskId: widget.taskToEdit!.id,
-        title: _titleController.text,
-        description: _subtaskController.text.isEmpty ? null : _subtaskController.text,
-      ));
+      taskBloc.add(
+        UpdateTask(
+          taskId: widget.taskToEdit!.id,
+          title: _titleController.text,
+          description: _subtaskController.text.isEmpty
+              ? null
+              : _subtaskController.text,
+        ),
+      );
     } else {
-      taskBloc.add(AddTask(
-        title: _titleController.text,
-        description: _subtaskController.text.isEmpty ? null : _subtaskController.text,
-        deadline: DateTime.now(),
-      ));
+      taskBloc.add(
+        AddTask(
+          title: _titleController.text,
+          description: _subtaskController.text.isEmpty
+              ? null
+              : _subtaskController.text,
+          deadline: DateTime.now(),
+        ),
+      );
     }
     Navigator.of(context).pop();
   }
@@ -1068,10 +1104,7 @@ class _MoodDialog extends StatelessWidget {
             const Text(
               'Select your mood to start your day!',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
             const SizedBox(height: 32),
             Row(
@@ -1081,19 +1114,34 @@ class _MoodDialog extends StatelessWidget {
                   mood: 'sad',
                   label: 'Sad',
                   color: Colors.blueAccent,
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    context.read<MoodBloc>().add(
+                      SubmitMood(mood: 'sad', date: DateTime.now()),
+                    );
+                    Navigator.pop(context);
+                  },
                 ),
                 _MoodOption(
                   mood: 'normal',
                   label: 'Normal',
                   color: Colors.orangeAccent,
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    context.read<MoodBloc>().add(
+                      SubmitMood(mood: 'normal', date: DateTime.now()),
+                    );
+                    Navigator.pop(context);
+                  },
                 ),
                 _MoodOption(
                   mood: 'happy',
                   label: 'Happy',
                   color: Colors.green,
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    context.read<MoodBloc>().add(
+                      SubmitMood(mood: 'happy', date: DateTime.now()),
+                    );
+                    Navigator.pop(context);
+                  },
                 ),
               ],
             ),
@@ -1133,9 +1181,7 @@ class _MoodOption extends StatelessWidget {
             child: SizedBox(
               width: 48,
               height: 48,
-              child: CustomPaint(
-                painter: _MascotFacePainter(mood: mood),
-              ),
+              child: CustomPaint(painter: _MascotFacePainter(mood: mood)),
             ),
           ),
           const SizedBox(height: 8),
@@ -1182,9 +1228,24 @@ class _MascotFacePainter extends CustomPainter {
     canvas.drawOval(faceRect, Paint()..color = faceColor);
 
     // 3. Draw Cheeks (vibrant pink, right under/next to eyes)
-    final cheekPaint = Paint()..color = const Color(0xFFFFA6D9).withValues(alpha: 0.85);
-    canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.22, h * 0.65), width: w * 0.2, height: h * 0.12), cheekPaint);
-    canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.78, h * 0.65), width: w * 0.2, height: h * 0.12), cheekPaint);
+    final cheekPaint = Paint()
+      ..color = const Color(0xFFFFA6D9).withValues(alpha: 0.85);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.22, h * 0.65),
+        width: w * 0.2,
+        height: h * 0.12,
+      ),
+      cheekPaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.78, h * 0.65),
+        width: w * 0.2,
+        height: h * 0.12,
+      ),
+      cheekPaint,
+    );
 
     // 4. Draw Eyes and Mouth based on mood
     final strokePaint = Paint()
@@ -1200,12 +1261,28 @@ class _MascotFacePainter extends CustomPainter {
       // Big cute round eyes • •
       canvas.drawCircle(Offset(w * 0.32, h * 0.52), w * 0.1, darkEyePaint);
       canvas.drawCircle(Offset(w * 0.68, h * 0.52), w * 0.1, darkEyePaint);
-      
+
       // Sparkles in eyes
-      canvas.drawCircle(Offset(w * 0.35, h * 0.48), w * 0.035, Paint()..color = Colors.white);
-      canvas.drawCircle(Offset(w * 0.28, h * 0.55), w * 0.015, Paint()..color = Colors.white);
-      canvas.drawCircle(Offset(w * 0.71, h * 0.48), w * 0.035, Paint()..color = Colors.white);
-      canvas.drawCircle(Offset(w * 0.64, h * 0.55), w * 0.015, Paint()..color = Colors.white);
+      canvas.drawCircle(
+        Offset(w * 0.35, h * 0.48),
+        w * 0.035,
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(
+        Offset(w * 0.28, h * 0.55),
+        w * 0.015,
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(
+        Offset(w * 0.71, h * 0.48),
+        w * 0.035,
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(
+        Offset(w * 0.64, h * 0.55),
+        w * 0.015,
+        Paint()..color = Colors.white,
+      );
 
       // Open happy mouth 'D'
       final mouthPath = Path()
@@ -1213,13 +1290,16 @@ class _MascotFacePainter extends CustomPainter {
         ..quadraticBezierTo(w * 0.5, h * 0.85, w * 0.6, h * 0.65)
         ..close();
       canvas.drawPath(mouthPath, fillPaint);
-      
+
       // Little pink tongue
       canvas.save();
       canvas.clipPath(mouthPath);
-      canvas.drawCircle(Offset(w * 0.5, h * 0.78), w * 0.06, Paint()..color = const Color(0xFFF472B6));
+      canvas.drawCircle(
+        Offset(w * 0.5, h * 0.78),
+        w * 0.06,
+        Paint()..color = const Color(0xFFF472B6),
+      );
       canvas.restore();
-      
     } else if (mood == 'normal') {
       // Small cute dot eyes • •
       canvas.drawCircle(Offset(w * 0.33, h * 0.55), w * 0.06, darkEyePaint);
@@ -1231,7 +1311,6 @@ class _MascotFacePainter extends CustomPainter {
         ..quadraticBezierTo(w * 0.465, h * 0.73, w * 0.5, h * 0.68)
         ..quadraticBezierTo(w * 0.535, h * 0.73, w * 0.57, h * 0.68);
       canvas.drawPath(mouth, strokePaint..strokeWidth = w * 0.045);
-      
     } else if (mood == 'sleepy') {
       // Sleepy closed eyes - -
       final leftEye = Path()
@@ -1248,25 +1327,46 @@ class _MascotFacePainter extends CustomPainter {
         ..moveTo(w * 0.46, h * 0.72)
         ..quadraticBezierTo(w * 0.5, h * 0.76, w * 0.54, h * 0.72);
       canvas.drawPath(mouth, strokePaint..strokeWidth = w * 0.04);
-      
     } else {
       // Sad puppy eyes (big and teary, slightly slanted)
       canvas.save();
       canvas.translate(w * 0.33, h * 0.55);
-      canvas.rotate(math.pi / 12);
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: w * 0.16, height: h * 0.22), darkEyePaint);
+      canvas.rotate(math.pi / 12); // Positive to tilt top right (sad)
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset.zero, width: w * 0.16, height: h * 0.22),
+        darkEyePaint,
+      );
       // Sparkles
-      canvas.drawCircle(Offset(w * 0.02, -h * 0.05), w * 0.04, Paint()..color = Colors.white);
-      canvas.drawCircle(Offset(-w * 0.02, h * 0.05), w * 0.015, Paint()..color = Colors.white);
+      canvas.drawCircle(
+        Offset(w * 0.02, -h * 0.05),
+        w * 0.04,
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(
+        Offset(-w * 0.02, h * 0.05),
+        w * 0.015,
+        Paint()..color = Colors.white,
+      );
       canvas.restore();
 
       canvas.save();
       canvas.translate(w * 0.67, h * 0.55);
-      canvas.rotate(-math.pi / 12);
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: w * 0.16, height: h * 0.22), darkEyePaint);
+      canvas.rotate(-math.pi / 12); // Negative to tilt top left (sad)
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset.zero, width: w * 0.16, height: h * 0.22),
+        darkEyePaint,
+      );
       // Sparkles
-      canvas.drawCircle(Offset(w * 0.02, -h * 0.05), w * 0.04, Paint()..color = Colors.white);
-      canvas.drawCircle(Offset(-w * 0.02, h * 0.05), w * 0.015, Paint()..color = Colors.white);
+      canvas.drawCircle(
+        Offset(w * 0.02, -h * 0.05),
+        w * 0.04,
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(
+        Offset(-w * 0.02, h * 0.05),
+        w * 0.015,
+        Paint()..color = Colors.white,
+      );
       canvas.restore();
 
       // Sad wobbly pout
@@ -1274,12 +1374,13 @@ class _MascotFacePainter extends CustomPainter {
         ..moveTo(w * 0.43, h * 0.78)
         ..quadraticBezierTo(w * 0.5, h * 0.73, w * 0.57, h * 0.78);
       canvas.drawPath(mouthPath, strokePaint..strokeWidth = w * 0.045);
-      
+
       // Tears streaming down
-      final tearPaint = Paint()..color = const Color(0xFF60A5FA).withValues(alpha: 0.9);
+      final tearPaint = Paint()
+        ..color = const Color(0xFF60A5FA).withValues(alpha: 0.9);
       canvas.drawCircle(Offset(w * 0.23, h * 0.65), w * 0.03, tearPaint);
       canvas.drawCircle(Offset(w * 0.26, h * 0.75), w * 0.035, tearPaint);
-      
+
       canvas.drawCircle(Offset(w * 0.77, h * 0.65), w * 0.03, tearPaint);
       canvas.drawCircle(Offset(w * 0.74, h * 0.75), w * 0.035, tearPaint);
     }

@@ -54,4 +54,8 @@ class ApiConfig {
 
   // ── Rest Day ──
   static const String restDay = '/daily-record/rest-day';
+
+  // ── Mood ──
+  static const String mood = '/mood';
+  static const String moodHistory = '/mood/history';
 }

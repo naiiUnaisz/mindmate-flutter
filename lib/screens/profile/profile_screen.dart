@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,8 @@ import 'package:application_belajar/bloc/profile/profile_event.dart';
 import 'package:application_belajar/networks/api_client.dart';
 import 'package:application_belajar/bloc/task/task_bloc.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
+import 'package:application_belajar/bloc/mood/mood_bloc.dart';
+import 'package:application_belajar/bloc/mood/mood_event.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -30,13 +33,21 @@ class ProfileScreen extends StatelessWidget {
                       child: Center(
                         child: Text(
                           'Profile',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1F2937),
+                          ),
                         ),
                       ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.pushNamed(context, '/settings'),
-                      child: const Icon(Icons.settings_outlined, size: 24, color: Color(0xFF1F2937)),
+                      child: const Icon(
+                        Icons.settings_outlined,
+                        size: 24,
+                        color: Color(0xFF1F2937),
+                      ),
                     ),
                   ],
                 ),
@@ -46,31 +57,65 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 32),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Text('Data Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
+                child: Text(
+                  'Data Management',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                decoration: BoxDecoration(color: const Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Column(
                   children: [
-                    _MenuItem(label: 'Puzzle Collect', onTap: () => Navigator.pushNamed(context, '/puzzle-collection')),
-                    _MenuItem(label: 'Coins Detail', onTap: () => Navigator.pushNamed(context, '/coin-detail')),
-                    _MenuItem(label: 'Trash', onTap: () => Navigator.pushNamed(context, '/trash')),
+                    _MenuItem(
+                      label: 'Puzzle Collect',
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/puzzle-collection'),
+                    ),
+                    _MenuItem(
+                      label: 'Coins Detail',
+                      onTap: () => Navigator.pushNamed(context, '/coin-detail'),
+                    ),
+                    _MenuItem(
+                      label: 'Trash',
+                      onTap: () => Navigator.pushNamed(context, '/trash'),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 28),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Text('Account', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
+                child: Text(
+                  'Account',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: GestureDetector(
                   onTap: () => _showLogoutDialog(context),
-                  child: const Text('Log Out', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFFEF4444))),
+                  child: const Text(
+                    'Log Out',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFFEF4444),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -114,106 +159,211 @@ class _ProfileCard extends StatelessWidget {
             Positioned(
               right: -20,
               top: 50,
-              child: Icon(Icons.extension, size: 200, color: const Color(0xFF7C3AED).withValues(alpha: 0.04)),
+              child: Icon(
+                Icons.extension,
+                size: 200,
+                color: const Color(0xFF7C3AED).withValues(alpha: 0.04),
+              ),
             ),
             Column(
               children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  AppColors.primary.withValues(alpha: 0.7),
-                  AppColors.primary.withValues(alpha: 0.5),
-                ]),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(child: Divider(color: Colors.white54, thickness: 1, endIndent: 12, indent: 80)),
-                  Text('PROFILE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 2, color: Colors.white)),
-                  Expanded(child: Divider(color: Colors.white54, thickness: 1, indent: 12, endIndent: 80)),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 64, height: 64,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(color: const Color(0xFFF3E8FF), child: const Icon(Icons.person, size: 36, color: Color(0xFF7C3AED))),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
-                        const SizedBox(height: 2),
-                        Text(user.username.isNotEmpty ? '@${user.username}' : '', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.primary.withValues(alpha: 0.7))),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.7),
+                        AppColors.primary.withValues(alpha: 0.5),
                       ],
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pushNamed('/edit-profile'),
-                    child: Container(
-                      width: 32, height: 32,
-                      decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF3F4F6)),
-                      child: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF6B7280)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  _StatColumn(
-                    value: user.gender.isNotEmpty ? user.gender : '-',
-                    label: 'GENDER',
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Colors.white54,
+                          thickness: 1,
+                          endIndent: 12,
+                          indent: 80,
+                        ),
+                      ),
+                      Text(
+                        'PROFILE',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.white54,
+                          thickness: 1,
+                          indent: 12,
+                          endIndent: 80,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 24),
-                  _StatColumn(
-                    value: user.age > 0 ? user.age.toString() : '-',
-                    label: 'AGE',
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: _ProfileAvatar(avatar: user.avatar),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1F2937),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              user.username.isNotEmpty
+                                  ? '@${user.username}'
+                                  : '',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.primary.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () =>
+                            Navigator.of(context).pushNamed('/edit-profile'),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFF3F4F6),
+                          ),
+                          child: const Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 24),
-                  _StatColumn(
-                    value: user.birthdayFormatted,
-                    label: 'BIRTHDAY',
+                ),
+                const SizedBox(height: 18),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      _StatColumn(
+                        value: user.gender.isNotEmpty
+                            ? user.genderDisplay
+                            : '-',
+                        label: 'GENDER',
+                      ),
+                      const SizedBox(width: 24),
+                      _StatColumn(
+                        value: user.age > 0 ? user.age.toString() : '-',
+                        label: 'AGE',
+                      ),
+                      const SizedBox(width: 24),
+                      _StatColumn(
+                        value: user.birthdayFormatted,
+                        label: 'BIRTHDAY',
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Registered on: ${user.lastActiveDate.day.toString().padLeft(2, '0')}/${user.lastActiveDate.month.toString().padLeft(2, '0')}/${user.lastActiveDate.year}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF9CA3AF)),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Registered on: ${user.lastActiveDate.day.toString().padLeft(2, '0')}/${user.lastActiveDate.month.toString().padLeft(2, '0')}/${user.lastActiveDate.year}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      const Text(
+                        '<<<<<<<<<<',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFD1D5DB),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Text('<<<<<<<<<<', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFD1D5DB), letterSpacing: 1.5)),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
-      ],
-    ),
+      ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  final String? avatar;
+
+  const _ProfileAvatar({this.avatar});
+
+  @override
+  Widget build(BuildContext context) {
+    if (avatar == null || avatar!.isEmpty) {
+      return Container(
+        color: const Color(0xFFF3E8FF),
+        child: const Icon(Icons.person, size: 36, color: Color(0xFF7C3AED)),
+      );
+    }
+    // Try as base64 (no / or http prefix)
+    if (!avatar!.startsWith('http') && !avatar!.startsWith('/')) {
+      try {
+        final bytes = base64Decode(avatar!);
+        return Image.memory(bytes, fit: BoxFit.cover);
+      } catch (_) {}
+    }
+    return Image.network(
+      avatar!,
+      fit: BoxFit.cover,
+      errorBuilder: (ctx, err, st) => Container(
+        color: const Color(0xFFF3E8FF),
+        child: const Icon(Icons.person, size: 36, color: Color(0xFF7C3AED)),
       ),
     );
   }
@@ -342,20 +492,23 @@ class _LogoutDialog extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                          onPressed: () async {
-                            context.read<TaskBloc>().add(ClearTasks());
-                            context.read<ProfileBloc>().add(ClearProfile());
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.remove('current_user_email');
-                            if (!context.mounted) return;
-                            await ApiClient().apiLogout();
-                            if (!context.mounted) return;
-                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
-                          },
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      context.read<TaskBloc>().add(ClearTasks());
+                      context.read<ProfileBloc>().add(ClearProfile());
+                      context.read<MoodBloc>().add(ClearMood());
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.remove('current_user_email');
+                      if (!context.mounted) return;
+                      await ApiClient().apiLogout();
+                      if (!context.mounted) return;
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/login', (_) => false);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF7C3AED),
                       foregroundColor: Colors.white,
@@ -404,9 +557,7 @@ class _LogoutDialog extends StatelessWidget {
             child: SizedBox(
               width: 140,
               height: 120,
-              child: CustomPaint(
-                painter: _SadMascotPainter(),
-              ),
+              child: CustomPaint(painter: _SadMascotPainter()),
             ),
           ),
         ],
@@ -428,13 +579,17 @@ class _SadMascotPainter extends CustomPainter {
     final primaryColor = const Color(0xFFB78AF7);
     final faceColor = const Color(0xFFFFE4E6);
     final darkPurple = const Color(0xFF8B5CF6);
-    
+
     // Slit position
     final slitY = h * 0.95;
-    
+
     // Background of the slit
     final slitRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(w/2, slitY), width: w * 0.7, height: h * 0.1),
+      Rect.fromCenter(
+        center: Offset(w / 2, slitY),
+        width: w * 0.7,
+        height: h * 0.1,
+      ),
       const Radius.circular(20),
     );
     canvas.drawRRect(slitRect, Paint()..color = const Color(0xFFC4B5FD));
@@ -455,12 +610,26 @@ class _SadMascotPainter extends CustomPainter {
     final leftArm = Path()
       ..moveTo(w * 0.25, slitY)
       ..quadraticBezierTo(w * 0.15, slitY * 0.8, w * 0.1, slitY);
-    canvas.drawPath(leftArm, Paint()..color = primaryColor..style = PaintingStyle.stroke..strokeWidth = 12..strokeCap = StrokeCap.round);
-    
+    canvas.drawPath(
+      leftArm,
+      Paint()
+        ..color = primaryColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 12
+        ..strokeCap = StrokeCap.round,
+    );
+
     final rightArm = Path()
       ..moveTo(w * 0.75, slitY)
       ..quadraticBezierTo(w * 0.85, slitY * 0.8, w * 0.9, slitY);
-    canvas.drawPath(rightArm, Paint()..color = primaryColor..style = PaintingStyle.stroke..strokeWidth = 12..strokeCap = StrokeCap.round);
+    canvas.drawPath(
+      rightArm,
+      Paint()
+        ..color = primaryColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 12
+        ..strokeCap = StrokeCap.round,
+    );
 
     // Face
     final faceRect = Rect.fromCenter(
@@ -472,8 +641,22 @@ class _SadMascotPainter extends CustomPainter {
 
     // Cheeks
     final cheekPaint = Paint()..color = const Color(0xFFFFA6D9);
-    canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.35, h * 0.65), width: w * 0.12, height: h * 0.08), cheekPaint);
-    canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.65, h * 0.65), width: w * 0.12, height: h * 0.08), cheekPaint);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.35, h * 0.65),
+        width: w * 0.12,
+        height: h * 0.08,
+      ),
+      cheekPaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.65, h * 0.65),
+        width: w * 0.12,
+        height: h * 0.08,
+      ),
+      cheekPaint,
+    );
 
     // Sad eyes
     final eyePaint = Paint()
@@ -481,7 +664,7 @@ class _SadMascotPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round;
-      
+
     // Left eye (slanted down)
     final leftEye = Path()
       ..moveTo(w * 0.40, h * 0.58)
@@ -508,7 +691,7 @@ class _SadMascotPainter extends CustomPainter {
       ..quadraticBezierTo(w * 0.37, h * 0.67, w * 0.39, h * 0.69)
       ..quadraticBezierTo(w * 0.41, h * 0.67, w * 0.39, h * 0.63);
     canvas.drawPath(leftTear, tearPaint);
-    
+
     // Right tear
     final rightTear = Path()
       ..moveTo(w * 0.61, h * 0.63)
@@ -525,17 +708,36 @@ class _SadMascotPainter extends CustomPainter {
       ..lineTo(w * 0.85, slitY + h * 0.03)
       ..quadraticBezierTo(w * 0.5, slitY + h * 0.07, w * 0.15, slitY + h * 0.03)
       ..close();
-    canvas.drawPath(frontSlit, Paint()..color = primaryColor.withValues(alpha: 0.8));
+    canvas.drawPath(
+      frontSlit,
+      Paint()..color = primaryColor.withValues(alpha: 0.8),
+    );
 
     // Floating puzzle
     final puzzleCenter = Offset(w * 0.65, h * 0.12);
     canvas.drawCircle(puzzleCenter, w * 0.07, Paint()..color = darkPurple);
     // puzzle piece dots
     canvas.drawCircle(puzzleCenter, w * 0.018, Paint()..color = Colors.white);
-    canvas.drawCircle(puzzleCenter + Offset(0, -w * 0.025), w * 0.012, Paint()..color = Colors.white);
-    canvas.drawCircle(puzzleCenter + Offset(0, w * 0.025), w * 0.012, Paint()..color = Colors.white);
-    canvas.drawCircle(puzzleCenter + Offset(-w * 0.025, 0), w * 0.012, Paint()..color = Colors.white);
-    canvas.drawCircle(puzzleCenter + Offset(w * 0.025, 0), w * 0.012, Paint()..color = Colors.white);
+    canvas.drawCircle(
+      puzzleCenter + Offset(0, -w * 0.025),
+      w * 0.012,
+      Paint()..color = Colors.white,
+    );
+    canvas.drawCircle(
+      puzzleCenter + Offset(0, w * 0.025),
+      w * 0.012,
+      Paint()..color = Colors.white,
+    );
+    canvas.drawCircle(
+      puzzleCenter + Offset(-w * 0.025, 0),
+      w * 0.012,
+      Paint()..color = Colors.white,
+    );
+    canvas.drawCircle(
+      puzzleCenter + Offset(w * 0.025, 0),
+      w * 0.012,
+      Paint()..color = Colors.white,
+    );
   }
 
   @override

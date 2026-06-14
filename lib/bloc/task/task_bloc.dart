@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +13,21 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   String? _userEmail;
 
   String _prefKey(String key) => _userEmail != null ? '${_userEmail}_$key' : key;
+
+  Future<void> _saveTasks(List<Task> tasks, List<Task> dailyTasks) async {
+    if (_userEmail == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey('tasks'), jsonEncode(tasks.map((t) => t.toMap()).toList()));
+    await prefs.setStringList(_prefKey('daily_puzzle_task_ids'), dailyTasks.map((t) => t.id).toList());
+  }
+
+  List<Task>? _loadTasksSync(String json) {
+    final decoded = jsonDecode(json);
+    if (decoded is List) {
+      return decoded.map((e) => Task.fromMap(e as Map<String, dynamic>)).toList();
+    }
+    return null;
+  }
 
   TaskBloc() : super(const TaskState()) {
     on<LoadTasks>(_onLoadTasks);
@@ -44,16 +60,17 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
   Future<void> _onLoadTasks(LoadTasks event, Emitter<TaskState> emit) async {
     emit(state.copyWith(status: TaskStatus.loading, tasks: [], dailyPuzzleTasks: [], completedTasksToday: 0));
+
+    final prefs = await SharedPreferences.getInstance();
+    final rawEmail = prefs.getString('current_user_email');
+    _userEmail = rawEmail?.toLowerCase();
+
     try {
       final res = await _client.getTasks();
       if (res['status'] == 200 && res['data'] != null) {
         final list = (res['data'] as List)
             .map((e) => Task.fromMap(e as Map<String, dynamic>))
             .toList();
-
-        final prefs = await SharedPreferences.getInstance();
-        final rawEmail = prefs.getString('current_user_email');
-        _userEmail = rawEmail?.toLowerCase();
 
         // daily_puzzle_date: lowercase prefixed → original-case prefixed
         final lastDate = prefs.getString(_prefKey('daily_puzzle_date')) ??
@@ -86,11 +103,18 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
               .toList();
           completedCount = 0;
         } else {
-          daily = state.dailyPuzzleTasks.isNotEmpty
-              ? state.dailyPuzzleTasks
-              : _buildDailyFrom(list);
+          final savedDailyIds = prefs.getStringList(_prefKey('daily_puzzle_task_ids')) ?? [];
+          if (savedDailyIds.isNotEmpty) {
+            daily = list.where((t) => savedDailyIds.contains(t.id)).toList();
+          } else {
+            daily = state.dailyPuzzleTasks.isNotEmpty
+                ? state.dailyPuzzleTasks
+                : _buildDailyFrom(list);
+          }
           completedCount = daily.where((t) => t.isCompleted).length;
         }
+
+        await _saveTasks(list, daily);
 
         emit(state.copyWith(
           tasks: list,
@@ -99,9 +123,27 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           status: TaskStatus.success,
         ));
       } else {
+        // Fall back to cache
+        final cached = prefs.getString(_prefKey('tasks'));
+        if (cached != null) {
+          final cachedTasks = _loadTasksSync(cached);
+          if (cachedTasks != null) {
+            emit(state.copyWith(tasks: cachedTasks, status: TaskStatus.success));
+            return;
+          }
+        }
         emit(state.copyWith(status: TaskStatus.success));
       }
     } catch (_) {
+      // Try loading from cache
+      final cached = prefs.getString(_prefKey('tasks'));
+      if (cached != null) {
+        final cachedTasks = _loadTasksSync(cached);
+        if (cachedTasks != null) {
+          emit(state.copyWith(tasks: cachedTasks, status: TaskStatus.success));
+          return;
+        }
+      }
       emit(state.copyWith(status: TaskStatus.success));
     }
   }
@@ -124,6 +166,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (updatedDaily.length < AppConstants.maxDailyPuzzleTasks) {
         updatedDaily.add(serverTask);
       }
+      await _saveTasks(updatedTasks, updatedDaily);
       emit(state.copyWith(tasks: updatedTasks, dailyPuzzleTasks: updatedDaily));
     } catch (_) {
       final task = Task(
@@ -138,6 +181,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (updatedDaily.length < AppConstants.maxDailyPuzzleTasks) {
         updatedDaily.add(task);
       }
+      await _saveTasks(updatedTasks, updatedDaily);
       emit(state.copyWith(tasks: updatedTasks, dailyPuzzleTasks: updatedDaily));
     }
   }
@@ -145,11 +189,14 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   Future<void> _onDeleteTask(DeleteTask event, Emitter<TaskState> emit) async {
     final task = state.tasks.where((t) => t.id == event.taskId).firstOrNull;
     if (task != null && task.isCompleted) return;
+    final updatedTasks =
+        state.tasks.where((t) => t.id != event.taskId).toList();
+    final updatedDaily = state.dailyPuzzleTasks.where((t) => t.id != event.taskId).toList();
     emit(state.copyWith(
-      tasks: state.tasks.where((t) => t.id != event.taskId).toList(),
-      dailyPuzzleTasks:
-          state.dailyPuzzleTasks.where((t) => t.id != event.taskId).toList(),
+      tasks: updatedTasks,
+      dailyPuzzleTasks: updatedDaily,
     ));
+    await _saveTasks(updatedTasks, updatedDaily);
     try {
       await _client.deleteTask(event.taskId);
     } catch (_) {}
@@ -167,6 +214,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           : t;
     }).toList();
     emit(state.copyWith(tasks: updatedTasks, dailyPuzzleTasks: updatedDaily));
+    await _saveTasks(updatedTasks, updatedDaily);
     try {
       await _client.updateTask(event.taskId, event.title, event.description);
     } catch (_) {}
@@ -200,6 +248,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         completedTasksToday: newCompletedCount,
       ),
     ));
+    await _saveTasks(updatedTasks, updatedDaily);
 
     try {
       await _client.completeTask(event.taskId);

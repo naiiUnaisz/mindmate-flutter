@@ -7,6 +7,8 @@ import 'package:application_belajar/bloc/task/task_bloc.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_event.dart';
+import 'package:application_belajar/bloc/mood/mood_bloc.dart';
+import 'package:application_belajar/bloc/mood/mood_event.dart';
 import 'package:application_belajar/screens/onboarding/splash_screen.dart';
 import 'package:application_belajar/screens/onboarding/onboarding_screen.dart';
 import 'package:application_belajar/screens/auth/login_screen.dart';
@@ -47,6 +49,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => AuthBloc()),
         BlocProvider(create: (_) => TaskBloc()..add(LoadTasks())),
         BlocProvider(create: (_) => ProfileBloc()..add(LoadProfile())),
+        BlocProvider(create: (_) => MoodBloc()..add(LoadMoodHistory())),
       ],
       child: MaterialApp(
         title: 'Mindmate',

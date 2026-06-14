@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/networks/api_client.dart';
 import 'package:application_belajar/config/theme.dart';
 
@@ -14,13 +16,39 @@ class _TrashScreenState extends State<TrashScreen> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
 
+  String? _userEmail;
+  String _prefKey(String key) => _userEmail != null ? '${_userEmail}_$key' : key;
+
   @override
   void initState() {
     super.initState();
     _loadTrash();
   }
 
+  Future<void> _saveCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey('trash_items'), jsonEncode(_items));
+  }
+
+  Future<void> _loadCachedTrash() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawEmail = prefs.getString('current_user_email');
+    _userEmail = rawEmail?.toLowerCase();
+    
+    final cached = prefs.getString(_prefKey('trash_items'));
+    if (cached != null) {
+      final decoded = jsonDecode(cached);
+      if (decoded is List) {
+        setState(() {
+          _items = decoded.cast<Map<String, dynamic>>();
+          _loading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _loadTrash() async {
+    await _loadCachedTrash();
     setState(() => _loading = true);
     try {
       final res = await _client.getTrash();
@@ -30,6 +58,7 @@ class _TrashScreenState extends State<TrashScreen> {
           _items = list;
           _loading = false;
         });
+        await _saveCache();
         return;
       }
     } catch (_) {}
@@ -40,6 +69,7 @@ class _TrashScreenState extends State<TrashScreen> {
     try {
       await _client.restoreFromTrash(taskId);
       setState(() => _items.removeWhere((i) => i['id'].toString() == taskId));
+      await _saveCache();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Task restored')),
@@ -58,6 +88,7 @@ class _TrashScreenState extends State<TrashScreen> {
     try {
       await _client.deleteFromTrash(taskId);
       setState(() => _items.removeWhere((i) => i['id'].toString() == taskId));
+      await _saveCache();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Task permanently deleted')),

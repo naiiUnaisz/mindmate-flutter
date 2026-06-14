@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,7 +22,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _gender = '';
   DateTime? _dateOfBirth;
 
-  File? _profileImage;
+  Uint8List? _profileImageBytes;
   final ImagePicker _picker = ImagePicker();
 
   bool _initialized = false;
@@ -50,8 +52,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         imageQuality: 85,
       );
       if (picked != null) {
+        final bytes = await picked.readAsBytes();
         setState(() {
-          _profileImage = File(picked.path);
+          _profileImageBytes = bytes;
         });
       }
     } catch (e) {
@@ -74,9 +77,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primary,
-            ),
+            colorScheme: ColorScheme.light(primary: AppColors.primary),
           ),
           child: child!,
         );
@@ -87,20 +88,146 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void _save() {
+  /// Build avatar widget: new picked file > existing saved avatar > placeholder
+  Widget _buildAvatarContent(User user) {
+    // New image just picked from gallery
+    if (_profileImageBytes != null) {
+      return Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.memory(
+              _profileImageBytes!,
+              width: 110,
+              height: 110,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            bottom: 6,
+            right: 6,
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                size: 16,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Existing saved avatar from user profile
+    final existingAvatar = user.avatar;
+    if (existingAvatar != null && existingAvatar.isNotEmpty) {
+      Widget imgWidget;
+      if (!existingAvatar.startsWith('http') &&
+          !existingAvatar.startsWith('/')) {
+        try {
+          final bytes = base64Decode(existingAvatar);
+          imgWidget = Image.memory(
+            bytes,
+            width: 110,
+            height: 110,
+            fit: BoxFit.cover,
+          );
+        } catch (_) {
+          imgWidget = Image.network(
+            existingAvatar,
+            width: 110,
+            height: 110,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+          );
+        }
+      } else {
+        imgWidget = Image.network(
+          existingAvatar,
+          width: 110,
+          height: 110,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+        );
+      }
+      return Stack(
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(14), child: imgWidget),
+          Positioned(
+            bottom: 6,
+            right: 6,
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                size: 16,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // No avatar yet — show placeholder
+    return _avatarPlaceholder();
+  }
+
+  Widget _avatarPlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.person,
+          size: 40,
+          color: AppColors.primary.withValues(alpha: 0.5),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Add Photo',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.primary.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name cannot be empty')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Name cannot be empty')));
       return;
     }
     final currentUser = context.read<ProfileBloc>().state.user;
+
+    String? avatarBase64;
+    if (_profileImageBytes != null) {
+      avatarBase64 = base64Encode(_profileImageBytes!);
+    }
+
+    if (!context.mounted) return;
     final updated = currentUser.copyWith(
       name: name,
       username: _usernameController.text.trim(),
       gender: _gender,
       dateOfBirth: _dateOfBirth,
+      avatar: avatarBase64,
     );
     context.read<ProfileBloc>().add(UpdateUser(user: updated));
     Navigator.of(context).pop();
@@ -148,50 +275,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         width: 2,
                       ),
                       color: const Color(0xFFF3E8FF),
-                      image: _profileImage != null
+                      image: _profileImageBytes != null
                           ? DecorationImage(
-                              image: FileImage(_profileImage!),
+                              image: MemoryImage(_profileImageBytes!),
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: _profileImage == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.person,
-                                size: 40,
-                                color: AppColors.primary.withValues(alpha: 0.5),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Add Photo',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.primary.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Align(
-                            alignment: Alignment.bottomRight,
-                            child: Container(
-                              margin: const EdgeInsets.all(6),
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt_rounded,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
+                    child: _buildAvatarContent(user),
                   ),
                 ),
               ),
@@ -221,10 +312,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // ═══════════════════════════════════════
               // EMAIL (read-only)
               // ═══════════════════════════════════════
-              _ReadOnlyField(
-                value: user.email,
-                icon: Icons.shield_outlined,
-              ),
+              _ReadOnlyField(value: user.email, icon: Icons.shield_outlined),
               const SizedBox(height: 20),
 
               // ═══════════════════════════════════════
@@ -239,10 +327,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // ═══════════════════════════════════════
               // DATE OF BIRTH
               // ═══════════════════════════════════════
-              _DateOfBirthField(
-                date: _dateOfBirth,
-                onTap: _pickDate,
-              ),
+              _DateOfBirthField(date: _dateOfBirth, onTap: _pickDate),
 
               const SizedBox(height: 48),
 
@@ -253,7 +338,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _save,
+                  onPressed: () => _save(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -295,23 +380,34 @@ class _GenderField extends StatelessWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value.isEmpty ? null : value,
-          hint: const _FieldPlaceholder(icon: Icons.wc_outlined, text: 'Select Gender'),
+          hint: const _FieldPlaceholder(
+            icon: Icons.wc_outlined,
+            text: 'Select Gender',
+          ),
           isExpanded: true,
           padding: const EdgeInsets.symmetric(vertical: 14),
           icon: const Padding(
             padding: EdgeInsets.only(right: 8),
             child: Icon(Icons.arrow_drop_down, color: Color(0xFF9CA3AF)),
           ),
-          items: ['Male', 'Female']
-              .map((g) => DropdownMenuItem(
-                    value: g,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 36),
-                        Text(g, style: const TextStyle(fontSize: 15, color: Color(0xFF374151))),
-                      ],
-                    ),
-                  ))
+          items: ['male', 'female']
+              .map(
+                (g) => DropdownMenuItem(
+                  value: g,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 36),
+                      Text(
+                        g[0].toUpperCase() + g.substring(1),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
               .toList(),
           onChanged: (v) {
             if (v != null) onChanged(v);
@@ -345,7 +441,11 @@ class _DateOfBirthField extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.only(right: 12),
-              child: Icon(Icons.cake_outlined, size: 22, color: Color(0xFF7C3AED)),
+              child: Icon(
+                Icons.cake_outlined,
+                size: 22,
+                color: Color(0xFF7C3AED),
+              ),
             ),
             Text(
               date != null
@@ -353,7 +453,9 @@ class _DateOfBirthField extends StatelessWidget {
                   : 'Date of Birth',
               style: TextStyle(
                 fontSize: 15,
-                color: date != null ? const Color(0xFF374151) : const Color(0xFFD1D5DB),
+                color: date != null
+                    ? const Color(0xFF374151)
+                    : const Color(0xFFD1D5DB),
               ),
             ),
           ],
@@ -379,7 +481,10 @@ class _FieldPlaceholder extends StatelessWidget {
       children: [
         Icon(icon, size: 22, color: const Color(0xFF9CA3AF)),
         const SizedBox(width: 14),
-        Text(text, style: const TextStyle(fontSize: 15, color: Color(0xFFD1D5DB))),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 15, color: Color(0xFFD1D5DB)),
+        ),
       ],
     );
   }
@@ -449,7 +554,10 @@ class _ProfileField extends StatelessWidget {
           padding: const EdgeInsets.only(right: 12),
           child: Icon(icon, color: iconColor, size: 22),
         ),
-        prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 22),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 36,
+          minHeight: 22,
+        ),
         contentPadding: const EdgeInsets.symmetric(vertical: 14),
         border: const UnderlineInputBorder(
           borderSide: BorderSide(color: Color(0xFFE5E7EB)),

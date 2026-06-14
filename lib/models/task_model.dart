@@ -57,7 +57,7 @@ class Task {
       deadline: map['deadline'] != null
           ? DateTime.parse(map['deadline'])
           : DateTime.now(),
-      isCompleted: map['is_checked'] ?? map['isCompleted'] ?? false,
+      isCompleted: map['is_checked'] ?? map['is_completed'] ?? map['isCompleted'] ?? false,
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'])
           : DateTime.now(),

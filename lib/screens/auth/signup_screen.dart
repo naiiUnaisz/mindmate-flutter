@@ -9,6 +9,8 @@ import 'package:application_belajar/bloc/task/task_bloc.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_event.dart';
+import 'package:application_belajar/bloc/mood/mood_bloc.dart';
+import 'package:application_belajar/bloc/mood/mood_event.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -43,6 +45,7 @@ class _SignupScreenState extends State<SignupScreen> {
           if (!context.mounted) return;
           await prefs.setString('current_user_email', email);
           if (!context.mounted) return;
+          context.read<MoodBloc>().add(LoadMoodHistory());
           context.read<TaskBloc>().add(LoadTasks());
           context.read<ProfileBloc>().add(LoadProfile());
           Navigator.of(context).pushNamedAndRemoveUntil('/main', (_) => false);

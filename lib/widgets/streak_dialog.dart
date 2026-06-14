@@ -15,237 +15,267 @@ class _StreakDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // For a real app, we'd calculate Monday/Tuesday etc. based on the current day.
-    // We can just use generic Day 1, Day 2, Day 3 or actual days.
-    // Let's dynamically get the day names if we want, or just static for the UI
-    
+    final screenSize = MediaQuery.of(context).size;
+    final isSmall = screenSize.height < 600;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          // Main card
-          Container(
-            margin: const EdgeInsets.only(top: 80),
-            padding: const EdgeInsets.fromLTRB(24, 70, 24, 24),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3E8FF), // Light purple background
-              borderRadius: BorderRadius.circular(24),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: isSmall ? 16 : 32,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: constraints.maxWidth,
+              maxWidth: constraints.maxWidth,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
               children: [
-                Text(
-                  streakCount > 1
-                      ? 'Streak: $streakCount Days!'
-                      : 'First Step!',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  streakCount > 1
-                      ? 'Amazing! $streakCount days streak!\nKeep the momentum going!'
-                      : "You've started your streak today.\nLet's keep it going!",
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF7C3AED),
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                
-                // Streak Tracker Card
+                // Main card
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                  margin: EdgeInsets.only(top: isSmall ? 60 : 80),
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    isSmall ? 50 : 70,
+                    24,
+                    24,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3E8FF),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildStreakDay(day: 'Mon', isActive: true, label: 'Today'),
-                      _buildStreakDay(day: 'Tue', isActive: false, label: 'Day 2'),
-                      _buildStreakDay(day: 'Wed', isActive: false, label: 'Day 3'),
+                      Text(
+                        streakCount > 1
+                            ? 'Streak: $streakCount Days!'
+                            : 'First Step!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isSmall ? 20 : 24,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        streakCount > 1
+                            ? 'Amazing! $streakCount days streak!\nKeep the momentum going!'
+                            : "You've started your streak today.\nLet's keep it going!",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isSmall ? 13 : 14,
+                          color: const Color(0xFF7C3AED),
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Streak Tracker Card
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStreakDay(day: 'Mon', isActive: true, label: 'Today'),
+                            _buildStreakDay(day: 'Tue', isActive: false, label: 'Day 2'),
+                            _buildStreakDay(day: 'Wed', isActive: false, label: 'Day 3'),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Keep going button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7658B2),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(26),
+                            ),
+                          ),
+                          child: const Text(
+                            'Keep going',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                
-                const SizedBox(height: 32),
-                
-                // Keep going button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7658B2),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(26),
+
+                // Close button
+                Positioned(
+                  top: isSmall ? 76 : 96,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF7658B2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: Colors.white,
                       ),
                     ),
-                    child: const Text(
-                      'Keep going',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ),
+                ),
+
+                // Mascot
+                Positioned(
+                  top: 0,
+                  child: SizedBox(
+                    width: isSmall ? 140 : 180,
+                    height: isSmall ? 120 : 160,
+                    child: CustomPaint(
+                      painter: _StreakMascotPainter(),
+                    ),
+                  ),
+                ),
+
+                // Confetti Decoration
+                Positioned(
+                  top: isSmall ? 80 : 100,
+                  left: 0,
+                  child: Transform.rotate(
+                    angle: -math.pi / 6,
+                    child: Container(
+                      width: isSmall ? 10 : 15,
+                      height: isSmall ? 4 : 6,
+                      color: const Color(0xFFFCD34D),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 60,
+                  right: 0,
+                  child: Transform.rotate(
+                    angle: math.pi / 4,
+                    child: Container(
+                      width: isSmall ? 10 : 15,
+                      height: isSmall ? 4 : 6,
+                      color: const Color(0xFFFCD34D),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-
-          // Close button
-          Positioned(
-            top: 96,
-            right: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF7658B2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.close_rounded,
-                  size: 18,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-
-          // Mascot
-          Positioned(
-            top: 0,
-            child: SizedBox(
-              width: 180,
-              height: 160,
-              child: CustomPaint(
-                painter: _StreakMascotPainter(),
-              ),
-            ),
-          ),
-          
-          // Confetti Decoration
-          Positioned(
-            top: 100,
-            left: 0,
-            child: Transform.rotate(
-              angle: -math.pi / 6,
-              child: Container(width: 15, height: 6, color: const Color(0xFFFCD34D)),
-            ),
-          ),
-          Positioned(
-            bottom: 60,
-            right: 0,
-            child: Transform.rotate(
-              angle: math.pi / 4,
-              child: Container(width: 15, height: 6, color: const Color(0xFFFCD34D)),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildStreakDay({required String day, required bool isActive, required String label}) {
-    return Column(
-      children: [
-        Text(
-          day,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF6B7280),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            if (isActive)
-              Container(
-                width: 50,
-                height: 50,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF6D28D9),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Color(0xFFFBBF24),
-                    size: 28,
-                  ),
-                ),
-              )
-            else
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFC4B5FD),
-                    width: 2,
-                  ),
-                ),
-              ),
-            
-            if (isActive) ...[
-              Positioned(
-                top: -5,
-                left: -5,
-                child: const Icon(Icons.star, color: Color(0xFFFCD34D), size: 10),
-              ),
-              Positioned(
-                bottom: 5,
-                left: -10,
-                child: const Icon(Icons.star, color: Color(0xFFFCD34D), size: 12),
-              ),
-              Positioned(
-                bottom: 15,
-                right: -10,
-                child: const Icon(Icons.star, color: Color(0xFFFCD34D), size: 10),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFF3E8FF) : const Color(0xFFF9FAFB),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isActive ? const Color(0xFF7C3AED) : const Color(0xFF9CA3AF),
+    return Flexible(
+      child: Column(
+        children: [
+          Text(
+            day,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6B7280),
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              if (isActive)
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF6D28D9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Color(0xFFFBBF24),
+                      size: 24,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFC4B5FD),
+                      width: 2,
+                    ),
+                  ),
+                ),
+
+              if (isActive) ...[
+                Positioned(
+                  top: -3,
+                  left: -3,
+                  child: const Icon(Icons.star, color: Color(0xFFFCD34D), size: 8),
+                ),
+                Positioned(
+                  bottom: 3,
+                  left: -6,
+                  child: const Icon(Icons.star, color: Color(0xFFFCD34D), size: 10),
+                ),
+                Positioned(
+                  bottom: 10,
+                  right: -6,
+                  child: const Icon(Icons.star, color: Color(0xFFFCD34D), size: 8),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isActive ? const Color(0xFFF3E8FF) : const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isActive ? const Color(0xFF7C3AED) : const Color(0xFF9CA3AF),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -66,14 +66,17 @@ class ProfileState extends Equatable {
 
   List<Map<String, dynamic>> get weeklyBarData {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+
     final days = <Map<String, dynamic>>[];
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    for (int i = 6; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
+    for (int i = 0; i < 7; i++) {
+      final date = monday.add(Duration(days: i));
       final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       final record = weeklyHistory[key];
       days.add({
-        'day': dayNames[date.weekday - 1],
+        'day': dayNames[i],
         'tasks': record?['tasks'] ?? 0,
         'coins': record?['coins'] ?? 0,
       });

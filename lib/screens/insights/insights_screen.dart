@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_state.dart';
+import 'package:application_belajar/bloc/mood/mood_bloc.dart';
+import 'package:application_belajar/bloc/mood/mood_state.dart';
 
 class InsightsScreen extends StatelessWidget {
   const InsightsScreen({super.key});
@@ -49,26 +51,45 @@ class InsightsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        children: const [
-                          _MoodPill(day: 'M', isYellow: false, mood: '😊'),
-                          SizedBox(width: 6),
-                          _MoodPill(day: 'T', isYellow: true, mood: '😊'),
-                          SizedBox(width: 6),
-                          _MoodPill(day: 'W', isYellow: false, mood: '😐'),
-                          SizedBox(width: 6),
-                          _MoodPill(day: 'T', isYellow: false, mood: '😊'),
-                          SizedBox(width: 6),
-                          _MoodPill(day: 'F', isYellow: true, mood: '😔'),
-                          SizedBox(width: 6),
-                          _MoodPill(day: 'S', isYellow: true, mood: '😊'),
-                          SizedBox(width: 6),
-                          _MoodPill(day: 'S', isYellow: false, mood: '😊'),
-                        ],
-                      ),
+                    BlocBuilder<MoodBloc, MoodState>(
+                      builder: (context, state) {
+                        final moodMap = <String, String>{};
+                        for (final m in state.moodHistory) {
+                          final key = '${m.date.year}-${m.date.month.toString().padLeft(2, '0')}-${m.date.day.toString().padLeft(2, '0')}';
+                          moodMap[key] = m.mood;
+                        }
+
+                        final now = DateTime.now();
+                        final today = DateTime(now.year, now.month, now.day);
+                        final monday = today.subtract(Duration(days: now.weekday - 1));
+                        
+                        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                        final weekDays = <Widget>[];
+                        for (int i = 0; i < 7; i++) {
+                          final date = monday.add(Duration(days: i));
+                          final isFuture = date.isAfter(today);
+                          final isToday = date.isAtSameMomentAs(today);
+                          
+                          final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                          final mood = moodMap[key];
+                          final emoji = isFuture ? '-' : _moodToEmoji(mood);
+
+                          weekDays.add(
+                            _MoodPill(
+                              day: dayNames[i],
+                              isYellow: isToday,
+                              mood: emoji,
+                            ),
+                          );
+                          if (i < 6) weekDays.add(const SizedBox(width: 6));
+                        }
+
+                        return FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(children: weekDays),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -117,6 +138,19 @@ class InsightsScreen extends StatelessWidget {
       ),
       child: child,
     );
+  }
+}
+
+String _moodToEmoji(String? mood) {
+  switch (mood) {
+    case 'happy':
+      return '😊';
+    case 'sad':
+      return '😔';
+    case 'normal':
+      return '😐';
+    default:
+      return '😐';
   }
 }
 
@@ -205,19 +239,29 @@ class _MiniMascotPainter extends CustomPainter {
     // Eyes
     const eyeColor = Color(0xFF2D1B4E);
     final eyeY = faceCy + 1 * s;
-    if (mood == '😔') {
+    if (mood == '-') {
+      // Future day: just draw a small dash in the center
+      canvas.drawLine(
+        Offset(cx - 3 * s, faceCy + 2 * s),
+        Offset(cx + 3 * s, faceCy + 2 * s),
+        Paint()
+          ..color = eyeColor
+          ..strokeWidth = 2 * s
+          ..strokeCap = StrokeCap.round,
+      );
+    } else if (mood == '😔') {
       // Sad eyes
       canvas.drawLine(
-        Offset(cx - 7 * s, eyeY - 1 * s),
-        Offset(cx - 4 * s, eyeY + 2 * s),
+        Offset(cx - 7 * s, eyeY + 2 * s),
+        Offset(cx - 4 * s, eyeY - 1 * s),
         Paint()
           ..color = eyeColor
           ..strokeWidth = 2.5 * s
           ..strokeCap = StrokeCap.round,
       );
       canvas.drawLine(
-        Offset(cx + 7 * s, eyeY - 1 * s),
-        Offset(cx + 4 * s, eyeY + 2 * s),
+        Offset(cx + 7 * s, eyeY + 2 * s),
+        Offset(cx + 4 * s, eyeY - 1 * s),
         Paint()
           ..color = eyeColor
           ..strokeWidth = 2.5 * s
@@ -256,7 +300,9 @@ class _MiniMascotPainter extends CustomPainter {
 
     // Mouth
     final mouthY = faceCy + 7 * s;
-    if (mood == '😊') {
+    if (mood == '-') {
+      // No mouth for future days
+    } else if (mood == '😊') {
       final p = Path()
         ..moveTo(cx - 5 * s, mouthY - 1 * s)
         ..quadraticBezierTo(cx, mouthY + 4 * s, cx + 5 * s, mouthY - 1 * s)

@@ -11,6 +11,7 @@ class User {
   final int totalTasksCompleted;
   final String gender;
   final DateTime? dateOfBirth;
+  final String? avatar;
 
   User({
     required this.id,
@@ -25,8 +26,14 @@ class User {
     this.totalTasksCompleted = 0,
     this.gender = '',
     this.dateOfBirth,
+    this.avatar,
   });
 
+  /// Capitalize first letter of gender for display
+  String get genderDisplay {
+    if (gender.isEmpty) return '-';
+    return gender[0].toUpperCase() + gender.substring(1).toLowerCase();
+  }
   int get age {
     if (dateOfBirth == null) return 0;
     final now = DateTime.now();
@@ -40,7 +47,7 @@ class User {
 
   String get birthdayFormatted {
     if (dateOfBirth == null) return '-';
-    return '${dateOfBirth!.day.toString().padLeft(2, '0')}/${dateOfBirth!.month.toString().padLeft(2, '0')}/${dateOfBirth!.year.toString().padLeft(2, '0')}';
+    return '${dateOfBirth!.day.toString().padLeft(2, '0')}/${dateOfBirth!.month.toString().padLeft(2, '0')}/${dateOfBirth!.year}';
   }
 
   User copyWith({
@@ -56,6 +63,7 @@ class User {
     int? totalTasksCompleted,
     String? gender,
     DateTime? dateOfBirth,
+    String? avatar,
   }) {
     return User(
       id: id ?? this.id,
@@ -70,6 +78,7 @@ class User {
       totalTasksCompleted: totalTasksCompleted ?? this.totalTasksCompleted,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      avatar: avatar ?? this.avatar,
     );
   }
 
@@ -87,27 +96,35 @@ class User {
       'totalTasksCompleted': totalTasksCompleted,
       'gender': gender,
       'dateOfBirth': dateOfBirth?.toIso8601String(),
+      if (avatar != null) 'avatar': avatar,
     };
   }
 
   factory User.fromMap(Map<String, dynamic> map) {
+    // Backend returns 'birthday' not 'date_of_birth'
+    final birthdayRaw = map['birthday'] ?? map['date_of_birth'];
+    final coinRaw = map['coin_balance'] ?? map['coins'] ?? 0;
+    final streakRaw = map['current_streak'] ?? map['streak'] ?? 0;
+
     return User(
       id: (map['id'] ?? '').toString(),
       name: map['name'] ?? '',
       email: map['email'] ?? '',
-      coins: int.tryParse((map['coin_balance'] ?? 0).toString()) ?? 0,
-      earnedCoins: int.tryParse((map['coin_balance'] ?? 0).toString()) ?? 0,
-      spentCoins: 0,
-      streak: int.tryParse((map['current_streak'] ?? 0).toString()) ?? 0,
-      lastActiveDate: map['last_active_date'] != null
-          ? DateTime.parse(map['last_active_date'])
-          : DateTime.now(),
-      totalTasksCompleted: map['total_tasks_completed'] ?? 0,
       username: map['username'] ?? '',
       gender: map['gender'] ?? '',
-      dateOfBirth: map['date_of_birth'] != null
-          ? DateTime.tryParse(map['date_of_birth'])
+      coins: int.tryParse(coinRaw.toString()) ?? 0,
+      earnedCoins: int.tryParse(coinRaw.toString()) ?? 0,
+      spentCoins: 0,
+      streak: int.tryParse(streakRaw.toString()) ?? 0,
+      lastActiveDate: map['created_at'] != null
+          ? DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      totalTasksCompleted:
+          int.tryParse((map['total_tasks_completed'] ?? 0).toString()) ?? 0,
+      dateOfBirth: birthdayRaw != null
+          ? DateTime.tryParse(birthdayRaw.toString())
           : null,
+      avatar: map['avatar']?.toString(),
     );
   }
 }
