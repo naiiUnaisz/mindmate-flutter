@@ -50,6 +50,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     String? email,
     String? gender,
     DateTime? dateOfBirth,
+    int? restDayQuota,
+    int? restDayUsed,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_prefKey('profile_coins'), coins);
@@ -89,6 +91,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     } else {
       await prefs.remove(_prefKey('rest_day_date'));
     }
+    if (restDayQuota != null)
+      await prefs.setInt(_prefKey('rest_day_quota'), restDayQuota);
+    if (restDayUsed != null)
+      await prefs.setInt(_prefKey('rest_day_used'), restDayUsed);
   }
 
   Future<void> _saveProfileFields(User user) async {
@@ -161,6 +167,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         user: state.user.copyWith(streak: 0),
         clearLastStreakDate: true,
         clearRestDayDate: true,
+        restDayUsed: 0,
       ),
     );
     await _savePrefs(
@@ -171,6 +178,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       maxStreak: state.maxStreak,
       earnedCoins: state.user.earnedCoins,
       spentCoins: state.user.spentCoins,
+      restDayUsed: 0,
     );
     await _saveProfileFields(state.user);
   }
@@ -212,6 +220,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         ? DateTime.tryParse(localRestDayStr)
         : null;
     final localMaxStreak = intPref('max_streak') ?? 0;
+    final localRestDayQuota = intPref('rest_day_quota') ?? 0;
+    final localRestDayUsed = intPref('rest_day_used') ?? 0;
     final localWeeklyStr = strPref('weekly_history');
     Map<String, Map<String, int>> localWeekly = {};
     if (localWeeklyStr != null) {
@@ -307,6 +317,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         maxStreak: localMaxStreak,
         weeklyHistory: localWeekly,
         collectedPuzzles: localCollected.toSet(),
+        restDayQuota: localRestDayQuota,
+        restDayUsed: localRestDayUsed,
       ),
     );
 
@@ -384,6 +396,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             maxStreak: localMaxStreak,
             weeklyHistory: localWeekly,
             collectedPuzzles: localCollected.toSet(),
+            restDayQuota: localRestDayQuota,
+            restDayUsed: localRestDayUsed,
           ),
         );
 
@@ -419,6 +433,21 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
                 final p = await SharedPreferences.getInstance();
                 await p.setInt(_prefKey('profile_streak'), apiStreak);
               }
+
+              // Parse restday_quota & reset used count (new week)
+              final apiQuota =
+                  int.tryParse(
+                    (data['restday_quota'] ?? 1).toString(),
+                  ) ??
+                  1;
+              final updatedQuota = apiQuota.clamp(1, 7);
+              emit(state.copyWith(
+                restDayQuota: updatedQuota,
+                restDayUsed: 0,
+              ));
+              final p = await SharedPreferences.getInstance();
+              await p.setInt(_prefKey('rest_day_quota'), updatedQuota);
+              await p.setInt(_prefKey('rest_day_used'), 0);
             }
           }
         } catch (_) {}
@@ -477,6 +506,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: event.user.email,
       gender: event.user.gender,
       dateOfBirth: event.user.dateOfBirth,
+      restDayUsed: state.restDayUsed,
     );
     await _saveProfileFields(event.user);
 
@@ -543,6 +573,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       restDayDate: state.restDayDate,
       earnedCoins: updated.earnedCoins,
       spentCoins: updated.spentCoins,
+      restDayUsed: state.restDayUsed,
     );
     await _saveProfileFields(state.user);
     try {
@@ -575,6 +606,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       restDayDate: state.restDayDate,
       earnedCoins: updated.earnedCoins,
       spentCoins: updated.spentCoins,
+      restDayUsed: state.restDayUsed,
     );
     await _saveProfileFields(state.user);
     try {
@@ -651,6 +683,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       maxStreak: newMax,
       earnedCoins: updated.earnedCoins,
       spentCoins: updated.spentCoins,
+      restDayUsed: state.restDayUsed,
     );
     await _saveProfileFields(state.user);
     try {
@@ -677,9 +710,19 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     ActivateRestDay event,
     Emitter<ProfileState> emit,
   ) async {
+    // Only allowed if streak has ever been active
+    if (state.user.streak < 1 && state.lastStreakDate == null) return;
+
+    // Check quota
+    if (state.restDayRemaining < 1) return;
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    emit(state.copyWith(restDayDate: today));
+    final newUsed = state.restDayUsed + 1;
+    emit(state.copyWith(
+      restDayDate: today,
+      restDayUsed: newUsed,
+    ));
     await _savePrefs(
       state.user.coins,
       state.user.streak,
@@ -687,13 +730,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       restDayDate: today,
       earnedCoins: state.user.earnedCoins,
       spentCoins: state.user.spentCoins,
+      restDayUsed: newUsed,
     );
     await _saveProfileFields(state.user);
     try {
       await _client.restDay(
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}',
       );
-    } catch (_) {}
+    } catch (e) {
+      // API failed — still keep local rest day protection
+    }
   }
 
   Future<void> _onDeactivateRestDay(
@@ -709,6 +755,11 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       spentCoins: state.user.spentCoins,
     );
     await _saveProfileFields(state.user);
+    try {
+      await _client.restDay('');
+    } catch (e) {
+      // API failed — local state already cleared
+    }
   }
 
   void _onClearProfile(ClearProfile event, Emitter<ProfileState> emit) {
@@ -768,6 +819,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       restDayDate: state.restDayDate,
       earnedCoins: updated.earnedCoins,
       spentCoins: updated.spentCoins,
+      restDayUsed: state.restDayUsed,
     );
     await _saveProfileFields(state.user);
     final prefs = await SharedPreferences.getInstance();

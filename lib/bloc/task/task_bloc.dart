@@ -65,12 +65,34 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     final rawEmail = prefs.getString('current_user_email');
     _userEmail = rawEmail?.toLowerCase();
 
+    // Load local cache first
+    final cachedTasksJson = prefs.getString(_prefKey('tasks'));
+    List<Task> localTasks = [];
+    if (cachedTasksJson != null) {
+      final loaded = _loadTasksSync(cachedTasksJson);
+      if (loaded != null) localTasks = loaded;
+    }
+
     try {
       final res = await _client.getTasks();
+      List<Task> mergedTasks;
       if (res['status'] == 200 && res['data'] != null) {
-        final list = (res['data'] as List)
+        final apiTasks = (res['data'] as List)
             .map((e) => Task.fromMap(e as Map<String, dynamic>))
             .toList();
+
+        // Merge: API tasks are source of truth, but keep local tasks not in API
+        final apiIds = apiTasks.map((t) => t.id).toSet();
+        final localOnlyTasks = localTasks.where((t) => !apiIds.contains(t.id)).toList();
+        mergedTasks = [...apiTasks, ...localOnlyTasks];
+
+        // Sync API completion status back to local-only tasks
+        for (final apiTask in apiTasks) {
+          final idx = mergedTasks.indexWhere((t) => t.id == apiTask.id);
+          if (idx >= 0) {
+            mergedTasks[idx] = apiTask;
+          }
+        }
 
         // daily_puzzle_date: lowercase prefixed → original-case prefixed
         final lastDate = prefs.getString(_prefKey('daily_puzzle_date')) ??
@@ -88,7 +110,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
         if (lastDate != today) {
           await prefs.setString(_prefKey('daily_puzzle_date'), today);
-          daily = list
+          daily = mergedTasks
               .where((t) => !t.isCompleted)
               .take(AppConstants.maxDailyPuzzleTasks)
               .map((t) => Task(
@@ -105,44 +127,53 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         } else {
           final savedDailyIds = prefs.getStringList(_prefKey('daily_puzzle_task_ids')) ?? [];
           if (savedDailyIds.isNotEmpty) {
-            daily = list.where((t) => savedDailyIds.contains(t.id)).toList();
+            daily = mergedTasks.where((t) => savedDailyIds.contains(t.id)).toList();
+            // If no daily tasks matched saved IDs (e.g. UUID tasks not in API),
+            // fall back to rebuilding from merged tasks
+            if (daily.isEmpty) {
+              daily = mergedTasks
+                  .where((t) => !t.isCompleted)
+                  .take(AppConstants.maxDailyPuzzleTasks)
+                  .map((t) => Task(
+                        id: t.id,
+                        title: t.title,
+                        description: t.description,
+                        deadline: DateTime.now(),
+                        isCompleted: t.isCompleted,
+                        createdAt: DateTime.now(),
+                        coinReward: t.coinReward,
+                      ))
+                  .toList();
+            }
           } else {
             daily = state.dailyPuzzleTasks.isNotEmpty
                 ? state.dailyPuzzleTasks
-                : _buildDailyFrom(list);
+                : _buildDailyFrom(mergedTasks);
           }
           completedCount = daily.where((t) => t.isCompleted).length;
         }
 
-        await _saveTasks(list, daily);
+        await _saveTasks(mergedTasks, daily);
 
         emit(state.copyWith(
-          tasks: list,
+          tasks: mergedTasks,
           dailyPuzzleTasks: daily,
           completedTasksToday: completedCount,
           status: TaskStatus.success,
         ));
       } else {
-        // Fall back to cache
-        final cached = prefs.getString(_prefKey('tasks'));
-        if (cached != null) {
-          final cachedTasks = _loadTasksSync(cached);
-          if (cachedTasks != null) {
-            emit(state.copyWith(tasks: cachedTasks, status: TaskStatus.success));
-            return;
-          }
+        // API failed — use local cache
+        if (localTasks.isNotEmpty) {
+          emit(state.copyWith(tasks: localTasks, status: TaskStatus.success));
+          return;
         }
         emit(state.copyWith(status: TaskStatus.success));
       }
     } catch (_) {
-      // Try loading from cache
-      final cached = prefs.getString(_prefKey('tasks'));
-      if (cached != null) {
-        final cachedTasks = _loadTasksSync(cached);
-        if (cachedTasks != null) {
-          emit(state.copyWith(tasks: cachedTasks, status: TaskStatus.success));
-          return;
-        }
+      // Network error — use local cache
+      if (localTasks.isNotEmpty) {
+        emit(state.copyWith(tasks: localTasks, status: TaskStatus.success));
+        return;
       }
       emit(state.copyWith(status: TaskStatus.success));
     }

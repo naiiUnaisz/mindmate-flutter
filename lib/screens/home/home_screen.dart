@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/config/theme.dart';
 import 'package:application_belajar/bloc/task/task_bloc.dart';
 import 'package:application_belajar/bloc/task/task_event.dart';
@@ -11,10 +11,10 @@ import 'package:application_belajar/widgets/streak_dialog.dart';
 import 'package:application_belajar/widgets/puzzle_widget.dart';
 import 'package:application_belajar/widgets/reward_dialog.dart';
 import 'package:application_belajar/widgets/restday_dialog.dart';
+import 'package:application_belajar/widgets/mood_dialog.dart';
 import 'package:application_belajar/models/task_model.dart';
 import 'package:application_belajar/bloc/profile/profile_state.dart';
 import 'package:application_belajar/bloc/mood/mood_bloc.dart';
-import 'package:application_belajar/bloc/mood/mood_event.dart';
 import 'package:application_belajar/bloc/mood/mood_state.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,19 +29,41 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // If already loaded and missing mood, show it
-      final moodState = context.read<MoodBloc>().state;
-      if (moodState.status == MoodStatus.success && moodState.todayMood == null) {
-        _showMoodDialog();
-      }
+      _tryShowMoodDialog();
     });
+  }
+
+  Future<void> _tryShowMoodDialog() async {
+    final moodState = context.read<MoodBloc>().state;if (moodState.todayMood != null) return;
+
+    // Check dedicated flag: if mood already submitted today, skip dialog
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('current_user_email')?.toLowerCase();
+    final prefix = email != null ? '${email}_' : 'guest_';
+    final today = '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
+    final flag = prefs.getString('${prefix}today_mood_submitted');
+    if (flag == today) return;
+
+    if (moodState.status != MoodStatus.success) return;
+    if (await _wasMoodDialogShownToday()) return;
+    _showMoodDialog();
+  }
+
+  Future<bool> _wasMoodDialogShownToday() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastShown = prefs.getString('mood_dialog_last_shown');
+    if (lastShown == null) return false;
+    final now = DateTime.now();
+    final today =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    return lastShown == today;
   }
 
   void _showMoodDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => _MoodDialog(),
+      builder: (ctx) => const MoodDialog(),
     );
   }
 
@@ -51,8 +73,9 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       body: BlocListener<MoodBloc, MoodState>(
         listener: (context, moodState) {
-          if (moodState.status == MoodStatus.success && moodState.todayMood == null) {
-            _showMoodDialog();
+          if (moodState.todayMood == null &&
+              moodState.status == MoodStatus.success) {
+            _tryShowMoodDialog();
           }
         },
         child: BlocListener<TaskBloc, TaskState>(
@@ -321,7 +344,10 @@ class _GreetingHeader extends StatelessWidget {
                     if (isRestDay) {
                       context.read<ProfileBloc>().add(DeactivateRestDay());
                     } else {
-                      final confirmed = await showRestDayDialog(context);
+                      final confirmed = await showRestDayDialog(
+                        context,
+                        restDayRemaining: state.restDayRemaining,
+                      );
                       if (confirmed == true && context.mounted) {
                         context.read<ProfileBloc>().add(ActivateRestDay());
                       }
@@ -338,7 +364,7 @@ class _GreetingHeader extends StatelessWidget {
                             width: 42,
                             height: 42,
                             child: CustomPaint(
-                              painter: _MascotFacePainter(
+                              painter: MascotFacePainter(
                                 mood: isRestDay ? 'sleepy' : 'happy',
                               ),
                             ),
@@ -1061,333 +1087,4 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MOOD DIALOG
-// ═══════════════════════════════════════════════════════════════════════════
 
-class _MoodDialog extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/images/mascot_unlock.png',
-              height: 120,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.emoji_emotions,
-                size: 80,
-                color: Color(0xFF7C3AED),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'How are you feeling today?',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Select your mood to start your day!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _MoodOption(
-                  mood: 'sad',
-                  label: 'Sad',
-                  color: Colors.blueAccent,
-                  onTap: () {
-                    context.read<MoodBloc>().add(
-                      SubmitMood(mood: 'sad', date: DateTime.now()),
-                    );
-                    Navigator.pop(context);
-                  },
-                ),
-                _MoodOption(
-                  mood: 'normal',
-                  label: 'Normal',
-                  color: Colors.orangeAccent,
-                  onTap: () {
-                    context.read<MoodBloc>().add(
-                      SubmitMood(mood: 'normal', date: DateTime.now()),
-                    );
-                    Navigator.pop(context);
-                  },
-                ),
-                _MoodOption(
-                  mood: 'happy',
-                  label: 'Happy',
-                  color: Colors.green,
-                  onTap: () {
-                    context.read<MoodBloc>().add(
-                      SubmitMood(mood: 'happy', date: DateTime.now()),
-                    );
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MoodOption extends StatelessWidget {
-  final String mood;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _MoodOption({
-    required this.mood,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
-            ),
-            child: SizedBox(
-              width: 48,
-              height: 48,
-              child: CustomPaint(painter: _MascotFacePainter(mood: mood)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MascotFacePainter extends CustomPainter {
-  final String mood;
-
-  _MascotFacePainter({required this.mood});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final primaryColor = const Color(0xFFB78AF7); // Main purple body color
-    final faceColor = const Color(0xFFFFE4E6); // Light pink face
-
-    // 1. Draw rounded body/head shape (chubby cute squircle)
-    final squircle = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, w, h),
-      Radius.circular(w * 0.45), // More rounded
-    );
-    canvas.drawRRect(squircle, Paint()..color = primaryColor);
-
-    // 2. Draw inner face oval (wider and lower)
-    final faceRect = Rect.fromCenter(
-      center: Offset(w * 0.5, h * 0.58),
-      width: w * 0.85,
-      height: h * 0.65,
-    );
-    canvas.drawOval(faceRect, Paint()..color = faceColor);
-
-    // 3. Draw Cheeks (vibrant pink, right under/next to eyes)
-    final cheekPaint = Paint()
-      ..color = const Color(0xFFFFA6D9).withValues(alpha: 0.85);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.22, h * 0.65),
-        width: w * 0.2,
-        height: h * 0.12,
-      ),
-      cheekPaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.78, h * 0.65),
-        width: w * 0.2,
-        height: h * 0.12,
-      ),
-      cheekPaint,
-    );
-
-    // 4. Draw Eyes and Mouth based on mood
-    final strokePaint = Paint()
-      ..color = const Color(0xFF1F2937)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = w * 0.05
-      ..strokeCap = StrokeCap.round;
-
-    final fillPaint = Paint()..color = const Color(0xFF831843);
-    final darkEyePaint = Paint()..color = const Color(0xFF1F2937);
-
-    if (mood == 'happy') {
-      // Big cute round eyes • •
-      canvas.drawCircle(Offset(w * 0.32, h * 0.52), w * 0.1, darkEyePaint);
-      canvas.drawCircle(Offset(w * 0.68, h * 0.52), w * 0.1, darkEyePaint);
-
-      // Sparkles in eyes
-      canvas.drawCircle(
-        Offset(w * 0.35, h * 0.48),
-        w * 0.035,
-        Paint()..color = Colors.white,
-      );
-      canvas.drawCircle(
-        Offset(w * 0.28, h * 0.55),
-        w * 0.015,
-        Paint()..color = Colors.white,
-      );
-      canvas.drawCircle(
-        Offset(w * 0.71, h * 0.48),
-        w * 0.035,
-        Paint()..color = Colors.white,
-      );
-      canvas.drawCircle(
-        Offset(w * 0.64, h * 0.55),
-        w * 0.015,
-        Paint()..color = Colors.white,
-      );
-
-      // Open happy mouth 'D'
-      final mouthPath = Path()
-        ..moveTo(w * 0.4, h * 0.65)
-        ..quadraticBezierTo(w * 0.5, h * 0.85, w * 0.6, h * 0.65)
-        ..close();
-      canvas.drawPath(mouthPath, fillPaint);
-
-      // Little pink tongue
-      canvas.save();
-      canvas.clipPath(mouthPath);
-      canvas.drawCircle(
-        Offset(w * 0.5, h * 0.78),
-        w * 0.06,
-        Paint()..color = const Color(0xFFF472B6),
-      );
-      canvas.restore();
-    } else if (mood == 'normal') {
-      // Small cute dot eyes • •
-      canvas.drawCircle(Offset(w * 0.33, h * 0.55), w * 0.06, darkEyePaint);
-      canvas.drawCircle(Offset(w * 0.67, h * 0.55), w * 0.06, darkEyePaint);
-
-      // Cute little 'w' mouth
-      final mouth = Path()
-        ..moveTo(w * 0.43, h * 0.68)
-        ..quadraticBezierTo(w * 0.465, h * 0.73, w * 0.5, h * 0.68)
-        ..quadraticBezierTo(w * 0.535, h * 0.73, w * 0.57, h * 0.68);
-      canvas.drawPath(mouth, strokePaint..strokeWidth = w * 0.045);
-    } else if (mood == 'sleepy') {
-      // Sleepy closed eyes - -
-      final leftEye = Path()
-        ..moveTo(w * 0.28, h * 0.55)
-        ..quadraticBezierTo(w * 0.33, h * 0.58, w * 0.38, h * 0.55);
-      final rightEye = Path()
-        ..moveTo(w * 0.62, h * 0.55)
-        ..quadraticBezierTo(w * 0.67, h * 0.58, w * 0.72, h * 0.55);
-      canvas.drawPath(leftEye, strokePaint..strokeWidth = w * 0.045);
-      canvas.drawPath(rightEye, strokePaint..strokeWidth = w * 0.045);
-
-      // Cute small sleepy mouth
-      final mouth = Path()
-        ..moveTo(w * 0.46, h * 0.72)
-        ..quadraticBezierTo(w * 0.5, h * 0.76, w * 0.54, h * 0.72);
-      canvas.drawPath(mouth, strokePaint..strokeWidth = w * 0.04);
-    } else {
-      // Sad puppy eyes (big and teary, slightly slanted)
-      canvas.save();
-      canvas.translate(w * 0.33, h * 0.55);
-      canvas.rotate(math.pi / 12); // Positive to tilt top right (sad)
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset.zero, width: w * 0.16, height: h * 0.22),
-        darkEyePaint,
-      );
-      // Sparkles
-      canvas.drawCircle(
-        Offset(w * 0.02, -h * 0.05),
-        w * 0.04,
-        Paint()..color = Colors.white,
-      );
-      canvas.drawCircle(
-        Offset(-w * 0.02, h * 0.05),
-        w * 0.015,
-        Paint()..color = Colors.white,
-      );
-      canvas.restore();
-
-      canvas.save();
-      canvas.translate(w * 0.67, h * 0.55);
-      canvas.rotate(-math.pi / 12); // Negative to tilt top left (sad)
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset.zero, width: w * 0.16, height: h * 0.22),
-        darkEyePaint,
-      );
-      // Sparkles
-      canvas.drawCircle(
-        Offset(w * 0.02, -h * 0.05),
-        w * 0.04,
-        Paint()..color = Colors.white,
-      );
-      canvas.drawCircle(
-        Offset(-w * 0.02, h * 0.05),
-        w * 0.015,
-        Paint()..color = Colors.white,
-      );
-      canvas.restore();
-
-      // Sad wobbly pout
-      final mouthPath = Path()
-        ..moveTo(w * 0.43, h * 0.78)
-        ..quadraticBezierTo(w * 0.5, h * 0.73, w * 0.57, h * 0.78);
-      canvas.drawPath(mouthPath, strokePaint..strokeWidth = w * 0.045);
-
-      // Tears streaming down
-      final tearPaint = Paint()
-        ..color = const Color(0xFF60A5FA).withValues(alpha: 0.9);
-      canvas.drawCircle(Offset(w * 0.23, h * 0.65), w * 0.03, tearPaint);
-      canvas.drawCircle(Offset(w * 0.26, h * 0.75), w * 0.035, tearPaint);
-
-      canvas.drawCircle(Offset(w * 0.77, h * 0.65), w * 0.03, tearPaint);
-      canvas.drawCircle(Offset(w * 0.74, h * 0.75), w * 0.035, tearPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MascotFacePainter oldDelegate) {
-    return oldDelegate.mood != mood;
-  }
-}

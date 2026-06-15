@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-Future<bool?> showRestDayDialog(BuildContext context) {
+Future<bool?> showRestDayDialog(BuildContext context, {int restDayRemaining = 0}) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => const _RestDayDialog(),
+    builder: (ctx) => _RestDayDialog(restDayRemaining: restDayRemaining),
   );
 }
 
 class _RestDayDialog extends StatelessWidget {
-  const _RestDayDialog();
+  final int restDayRemaining;
+  const _RestDayDialog({this.restDayRemaining = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -52,25 +53,41 @@ class _RestDayDialog extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 8),
+                Text(
+                  'Sisa Rest Day: $restDayRemaining',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: restDayRemaining > 0
+                        ? Color(0xFF6B7280)
+                        : Color(0xFFEF4444),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 24),
 
                 // Yakin button
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
+                    onPressed: restDayRemaining > 0
+                        ? () => Navigator.pop(context, true)
+                        : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7658B2),
+                      backgroundColor: restDayRemaining > 0
+                          ? const Color(0xFF7658B2)
+                          : const Color(0xFFD1D5DB),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(26),
                       ),
                     ),
-                    child: const Text(
-                      'Yakin',
-                      style: TextStyle(
+                    child: Text(
+                      restDayRemaining > 0 ? 'Yakin' : 'Habis',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),

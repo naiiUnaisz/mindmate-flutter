@@ -641,9 +641,9 @@ class _CoinInsightSection extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          '+80 from last week',
-                          style: TextStyle(
+                        Text(
+                          '+${state.weeklyCoinDiff} from last week',
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: Color(

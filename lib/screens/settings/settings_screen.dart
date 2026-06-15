@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/config/theme.dart';
+import 'package:application_belajar/utils/theme_service.dart';
 import 'package:application_belajar/networks/api_client.dart';
 
 /// Setting screen matching the MindMate design.
@@ -14,6 +15,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _dailyMoodReminder = false;
   bool _journalSummary = false;
+  bool _isDarkMode = false;
 
   @override
   void initState() {
@@ -28,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _dailyMoodReminder = prefs.getBool('${prefix}daily_mood_reminder') ?? false;
       _journalSummary = prefs.getBool('${prefix}journal_summary') ?? false;
+      _isDarkMode = prefs.getBool('theme_dark') ?? false;
     });
   }
 
@@ -95,6 +98,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _SettingsItem(label: 'Change Email', onTap: () => Navigator.pushNamed(context, '/change-email')),
                   _SettingsItem(label: 'Change Password', onTap: () => Navigator.pushNamed(context, '/change-password'), isLast: true),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // ═══════════════════════════════════════
+              // APPEARANCE SECTION
+              // ═══════════════════════════════════════
+              const Text(
+                'Appearance',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _SettingsGroup(
+                children: [
+                  _SettingsSwitchItem(
+                    label: 'Dark Mode',
+                    value: _isDarkMode,
+                    onChanged: (val) {
+                      setState(() => _isDarkMode = val);
+                      setThemeMode(val);
+                      ApiClient().updateSettings({'theme_dark': val});
+                    },
+                    isLast: true,
+                  ),
                 ],
               ),
               const SizedBox(height: 24),

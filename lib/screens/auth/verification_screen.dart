@@ -89,7 +89,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 const SizedBox(height: 32),
                 const AuthOrDivider(),
                 const SizedBox(height: 24),
-                const AuthSocialRow(),
+                AuthSocialRow(),
                 const SizedBox(height: 48),
                 const Center(child: Text("Don't have an account ?", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Color(0xFF6B7280)))),
                 const SizedBox(height: 16),

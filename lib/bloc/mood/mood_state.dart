@@ -16,6 +16,16 @@ class MoodState extends Equatable {
     this.todayMood,
   });
 
+  int get weeklyMoodCount {
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    return moodHistory.where((m) => m.date.isAfter(cutoff)).length;
+  }
+
+  List<Mood> get weeklyMoods {
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    return moodHistory.where((m) => m.date.isAfter(cutoff)).toList();
+  }
+
   MoodState copyWith({
     MoodStatus? status,
     String? errorMessage,

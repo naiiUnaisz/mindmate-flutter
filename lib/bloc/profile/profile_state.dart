@@ -27,6 +27,8 @@ class ProfileState extends Equatable {
   final DateTime? restDayDate;
   final int maxStreak;
   final Set<String> collectedPuzzles;
+  final int restDayQuota;
+  final int restDayUsed;
 
   const ProfileState({
     required this.user,
@@ -36,7 +38,11 @@ class ProfileState extends Equatable {
     this.restDayDate,
     this.maxStreak = 0,
     this.collectedPuzzles = const {},
+    this.restDayQuota = 0,
+    this.restDayUsed = 0,
   });
+
+  int get restDayRemaining => (restDayQuota - restDayUsed).clamp(0, restDayQuota);
 
   ProfileState copyWith({
     User? user,
@@ -46,6 +52,8 @@ class ProfileState extends Equatable {
     DateTime? restDayDate,
     int? maxStreak,
     Set<String>? collectedPuzzles,
+    int? restDayQuota,
+    int? restDayUsed,
     bool clearLastStreakDate = false,
     bool clearRestDayDate = false,
   }) {
@@ -61,6 +69,8 @@ class ProfileState extends Equatable {
           : restDayDate ?? this.restDayDate,
       maxStreak: maxStreak ?? this.maxStreak,
       collectedPuzzles: collectedPuzzles ?? this.collectedPuzzles,
+      restDayQuota: restDayQuota ?? this.restDayQuota,
+      restDayUsed: restDayUsed ?? this.restDayUsed,
     );
   }
 
@@ -84,10 +94,31 @@ class ProfileState extends Equatable {
     return days;
   }
 
+  int get weeklyCoinDiff {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: now.weekday - 1));
+
+    int thisWeek = 0;
+    int lastWeek = 0;
+
+    for (int i = 0; i < 7; i++) {
+      final date = monday.add(Duration(days: i));
+      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      thisWeek += weeklyHistory[key]?['coins'] ?? 0;
+
+      final lastDate = date.subtract(const Duration(days: 7));
+      final lastKey = '${lastDate.year}-${lastDate.month.toString().padLeft(2, '0')}-${lastDate.day.toString().padLeft(2, '0')}';
+      lastWeek += weeklyHistory[lastKey]?['coins'] ?? 0;
+    }
+
+    return thisWeek - lastWeek;
+  }
+
   bool isPuzzleUnlocked(String id) {
     return collectedPuzzles.contains(id);
   }
 
   @override
-  List<Object?> get props => [user, coinHistory, weeklyHistory, lastStreakDate, restDayDate, maxStreak, collectedPuzzles];
+  List<Object?> get props => [user, coinHistory, weeklyHistory, lastStreakDate, restDayDate, maxStreak, collectedPuzzles, restDayQuota, restDayUsed];
 }

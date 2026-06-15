@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:application_belajar/bloc/auth/auth_bloc.dart';
 import 'package:application_belajar/bloc/auth/auth_event.dart';
 import 'package:application_belajar/bloc/auth/auth_state.dart';
@@ -11,6 +12,7 @@ import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_event.dart';
 import 'package:application_belajar/bloc/mood/mood_bloc.dart';
 import 'package:application_belajar/bloc/mood/mood_event.dart';
+import 'package:application_belajar/networks/api_client.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,6 +24,62 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  Future<void> _handleGoogleSignIn(BuildContext context) async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) return;
+
+      final String email = googleUser.email;
+      final String name = googleUser.displayName ?? email.split('@').first;
+
+      // Try login first
+      final res = await ApiClient().login(email, 'google_auth_${email.hashCode}');
+      if (res['status'] == 200) {
+        if (!context.mounted) return;
+        _emailController.text = email;
+        _loginSuccess(context, email);
+        return;
+      }
+
+      // If login fails, register with Google account
+      final regRes = await ApiClient().register(name, email, 'google_auth_${email.hashCode}');
+      if (regRes['status'] == 201) {
+        if (!context.mounted) return;
+        _emailController.text = email;
+        _loginSuccess(context, email);
+      } else {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(regRes['message']?.toString() ?? 'Google Sign-In gagal'),
+            backgroundColor: Colors.red.shade400,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Google Sign-In gagal. Periksa koneksi internet Anda.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loginSuccess(BuildContext context, String email) async {
+    context.read<AuthBloc>().add(AuthReset());
+    final prefs = await SharedPreferences.getInstance();
+    if (!context.mounted) return;
+    await prefs.setString('current_user_email', email);
+    if (!context.mounted) return;
+    context.read<MoodBloc>().add(LoadMoodHistory());
+    context.read<TaskBloc>().add(LoadTasks());
+    context.read<ProfileBloc>().add(LoadProfile());
+    Navigator.of(context).pushNamedAndRemoveUntil('/main', (_) => false);
+  }
 
   @override
   void dispose() {
@@ -177,7 +235,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
 
                       // ── Social login buttons ──
-                      const AuthSocialRow(),
+                      AuthSocialRow(
+                        onGoogleTap: () => _handleGoogleSignIn(context),
+                      ),
 
                       const SizedBox(height: 36),
 

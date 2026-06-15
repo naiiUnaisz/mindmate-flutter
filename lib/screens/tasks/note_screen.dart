@@ -1,19 +1,15 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
+import 'package:application_belajar/bloc/note/note_bloc.dart';
+import 'package:application_belajar/bloc/note/note_event.dart';
+import 'package:application_belajar/bloc/note/note_state.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_event.dart';
-
+import 'package:application_belajar/bloc/task/task_bloc.dart';
+import 'package:application_belajar/bloc/task/task_event.dart';
 import 'package:application_belajar/widgets/reward_dialog.dart';
-import 'package:application_belajar/networks/api_client.dart';
-import 'package:uuid/uuid.dart';
 
-/// Note screen with "To do List" / "Default Task" tabs.
-/// Users can add notes via the purple FAB which opens a create note sheet.
 class NoteScreen extends StatefulWidget {
   const NoteScreen({super.key});
 
@@ -22,107 +18,17 @@ class NoteScreen extends StatefulWidget {
 }
 
 class _NoteScreenState extends State<NoteScreen> {
-  /// 0 = To do List, 1 = Default Task
   int _activeTab = 0;
-
-  // Dynamic lists — user can add items
-  static final List<_NoteItem> _toDoItems = [];
-  static final List<_NoteItem> _defaultItems = [];
-
-  List<_NoteItem> get _currentItems =>
-      _activeTab == 0 ? _toDoItems : _defaultItems;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    context.read<NoteBloc>().add(LoadNotes());
   }
 
-  Future<void> _loadData() async {
-    try {
-      final res = await ApiClient().getNotes();
-      if (res['status'] == 200 && res['data'] != null) {
-        final list = (res['data'] as List).map((e) {
-          final map = e as Map<String, dynamic>;
-          return _NoteItem(
-            id: map['id']?.toString(),
-            title: map['title'] ?? '',
-            subtitle: map['content'] ?? '',
-            isCompleted: map['is_completed'] ?? false,
-          );
-        }).toList();
-        setState(() {
-          _toDoItems
-            ..clear()
-            ..addAll(list);
-          _defaultItems.clear();
-        });
-        _saveData();
-        return;
-      }
-    } catch (_) {}
-
-    final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString('current_user_email')?.toLowerCase();
-    final prefix = email != null ? '${email}_' : '';
-    final todoJson = prefs.getString('${prefix}note_todo_items');
-    final defaultJson = prefs.getString('${prefix}note_default_items');
-    setState(() {
-      if (todoJson != null) {
-        final list = jsonDecode(todoJson) as List;
-        _toDoItems
-          ..clear()
-          ..addAll(list.map((e) => _NoteItem.fromMap(e as Map<String, dynamic>)));
-      }
-      if (defaultJson != null) {
-        final list = jsonDecode(defaultJson) as List;
-        _defaultItems
-          ..clear()
-          ..addAll(list.map((e) => _NoteItem.fromMap(e as Map<String, dynamic>)));
-      }
-    });
-  }
-
-  Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString('current_user_email')?.toLowerCase();
-    final prefix = email != null ? '${email}_' : '';
-    await prefs.setString(
-        '${prefix}note_todo_items',
-        jsonEncode(_toDoItems.map((e) => e.toMap()).toList()),
-    );
-    await prefs.setString(
-        '${prefix}note_default_items',
-        jsonEncode(_defaultItems.map((e) => e.toMap()).toList()),
-    );
-  }
-
-  void _addNote(String title, String subtitle) async {
-    final localItem = _NoteItem(title: title, subtitle: subtitle);
-    setState(() {
-      _currentItems.add(localItem);
-    });
-    _saveData();
-    try {
-      await ApiClient().createNote(title, subtitle);
-    } catch (_) {}
-    if (_activeTab == 1 && mounted) {
-      context.read<TaskBloc>().add(AddDefaultTask(title: title, description: subtitle));
-    }
-  }
-
-  void _deleteNote(int index) async {
-    final item = _currentItems[index];
-    setState(() {
-      _currentItems.removeAt(index);
-    });
-    _saveData();
-    try {
-      await ApiClient().deleteNote(item.id);
-    } catch (_) {}
-    if (_activeTab == 1 && mounted) {
-      context.read<TaskBloc>().add(RemoveDefaultTask(title: item.title));
-    }
+  List<NoteItem> _itemsForTab(NoteState state) {
+    if (_activeTab == 0) return state.todoNotes;
+    return state.defaultNotes;
   }
 
   @override
@@ -130,107 +36,119 @@ class _NoteScreenState extends State<NoteScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-
-            // ═══════════════════════════════════════
-            // HEADER: back arrow + "Note"
-            // ═══════════════════════════════════════
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(
-                      Icons.chevron_left_rounded,
-                      size: 30,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Note',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
+        child: BlocConsumer<NoteBloc, NoteState>(
+          listener: (context, state) {
+            if (state.status == NoteStatus.failure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage.isNotEmpty
+                      ? state.errorMessage
+                      : 'Terjadi kesalahan'),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            final items = _itemsForTab(state);
+            return Column(
+              children: [
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: const Icon(
+                          Icons.chevron_left_rounded,
+                          size: 30,
                           color: Color(0xFF1F2937),
                         ),
                       ),
-                    ),
+                      const Expanded(
+                        child: Center(
+                          child: Text(
+                            'Note',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                    ],
                   ),
-                  const SizedBox(width: 30),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ═══════════════════════════════════════
-            // TAB TOGGLE (centered)
-            // ═══════════════════════════════════════
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _TabButton(
-                  label: 'To do List',
-                  isActive: _activeTab == 0,
-                  onTap: () => setState(() => _activeTab = 0),
                 ),
-                const SizedBox(width: 10),
-                _TabButton(
-                  label: 'Default Task',
-                  isActive: _activeTab == 1,
-                  onTap: () => setState(() => _activeTab = 1),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // ═══════════════════════════════════════
-            // TASK LIST or EMPTY STATE
-            // ═══════════════════════════════════════
-            Expanded(
-              child: _currentItems.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: _currentItems.length,
-                      separatorBuilder: (context, index) =>
-                          const Divider(height: 1, color: Color(0xFFF3F4F6)),
-                      itemBuilder: (context, index) {
-                        final item = _currentItems[index];
-                        return _NoteTaskRow(
-                          title: item.title,
-                          subtitle: item.subtitle,
-                          isCompleted: item.isCompleted,
-                          onCheck: () {
-                            if (item.isCompleted) return;
-                            setState(() {
-                              item.isCompleted = true;
-                            });
-                            _saveData();
-                            context
-                                .read<ProfileBloc>()
-                                .add(EarnCoins(amount: 10, reason: 'task'));
-                            showRewardDialog(context);
-                          },
-                          onMore: () => _showMoreOptions(context, index),
-                        );
-                      },
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _TabButton(
+                      label: 'To do List',
+                      isActive: _activeTab == 0,
+                      onTap: () => setState(() => _activeTab = 0),
                     ),
-            ),
-          ],
+                    const SizedBox(width: 10),
+                    _TabButton(
+                      label: 'Default Task',
+                      isActive: _activeTab == 1,
+                      onTap: () => setState(() => _activeTab = 1),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (state.status == NoteStatus.loading)
+                  const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  Expanded(
+                    child: items.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.separated(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            itemCount: items.length,
+                            separatorBuilder: (context, index) =>
+                                const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              return _NoteTaskRow(
+                                title: item.title,
+                                subtitle: item.content,
+                                isCompleted: item.isCompleted,
+                                onCheck: () {
+                                  if (item.isCompleted) {
+                                    context.read<NoteBloc>().add(
+                                      CompleteNote(id: item.id),
+                                    );
+                                  } else {
+                                    context.read<NoteBloc>().add(
+                                      CompleteNote(id: item.id),
+                                    );
+                                    context.read<ProfileBloc>().add(
+                                      const EarnCoins(amount: 10, reason: 'task'),
+                                    );
+                                    context.read<ProfileBloc>().add(
+                                      AddToWeeklyHistory(tasks: 1, coins: 10),
+                                    );
+                                    showRewardDialog(context);
+                                  }
+                                },
+                                onMore: () =>
+                                    _showMoreOptions(context, index, item),
+                              );
+                            },
+                          ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
-
-      // ═══════════════════════════════════════
-      // FAB → opens Create Note sheet
-      // ═══════════════════════════════════════
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateNoteSheet(context),
         backgroundColor: AppColors.primary,
@@ -270,7 +188,6 @@ class _NoteScreenState extends State<NoteScreen> {
     );
   }
 
-  // ── Create Note Bottom Sheet ──
   void _showCreateNoteSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -279,15 +196,25 @@ class _NoteScreenState extends State<NoteScreen> {
       builder: (sheetContext) {
         return _CreateNoteSheet(
           onSave: (title, subtitle) {
-            _addNote(title, subtitle);
+            context.read<NoteBloc>().add(
+              AddNote(
+                title: title,
+                content: subtitle,
+                tab: _activeTab == 0 ? 'todo' : 'default',
+              ),
+            );
+            if (_activeTab == 1) {
+              context.read<TaskBloc>().add(
+                AddDefaultTask(title: title, description: subtitle),
+              );
+            }
           },
         );
       },
     );
   }
 
-  // ── More Options ──
-  void _showMoreOptions(BuildContext context, int index) {
+  void _showMoreOptions(BuildContext context, int index, NoteItem item) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -309,51 +236,40 @@ class _NoteScreenState extends State<NoteScreen> {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(
-                  Icons.edit_outlined,
-                  color: Color(0xFF6B7280),
-                ),
+                leading: const Icon(Icons.edit_outlined, color: Color(0xFF6B7280)),
                 title: const Text('Edit'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _showEditNoteSheet(context, index);
+                  _showEditNoteSheet(context, index, item);
                 },
               ),
               ListTile(
-                leading: const Icon(
-                  Icons.delete_outline,
-                  color: Color(0xFFEF4444),
-                ),
-                title: const Text(
-                  'Delete',
-                  style: TextStyle(color: Color(0xFFEF4444)),
-                ),
+                leading: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+                title: const Text('Delete', style: TextStyle(color: Color(0xFFEF4444))),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _deleteNote(index);
+                  context.read<NoteBloc>().add(DeleteNote(id: item.id));
                 },
               ),
               ListTile(
-                leading: const Icon(
-                  Icons.task_alt_outlined,
-                  color: Color(0xFF6B7280),
-                ),
+                leading: const Icon(Icons.task_alt_outlined, color: Color(0xFF6B7280)),
                 title: const Text('Default Task'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    setState(() {
-                      if (_activeTab == 0) {
-                        final item = _toDoItems.removeAt(index);
-                        _defaultItems.add(item);
-                        context.read<TaskBloc>().add(AddDefaultTask(title: item.title, description: item.subtitle));
-                      } else {
-                        final item = _defaultItems.removeAt(index);
-                        _toDoItems.add(item);
-                        context.read<TaskBloc>().add(RemoveDefaultTask(title: item.title));
-                      }
-                    });
-                    _saveData();
-                  },
+                onTap: () {
+                  Navigator.pop(ctx);
+                  final toTab = _activeTab == 0 ? 'default' : 'todo';
+                  context.read<NoteBloc>().add(
+                    MoveNote(id: item.id, fromTab: item.tab, toTab: toTab),
+                  );
+                  if (toTab == 'default') {
+                    context.read<TaskBloc>().add(
+                      AddDefaultTask(title: item.title, description: item.content),
+                    );
+                  } else {
+                    context.read<TaskBloc>().add(
+                      RemoveDefaultTask(title: item.title),
+                    );
+                  }
+                },
               ),
               const SizedBox(height: 8),
             ],
@@ -363,9 +279,7 @@ class _NoteScreenState extends State<NoteScreen> {
     );
   }
 
-  // ── Edit Note ──
-  void _showEditNoteSheet(BuildContext context, int index) {
-    final item = _currentItems[index];
+  void _showEditNoteSheet(BuildContext context, int index, NoteItem item) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -373,64 +287,18 @@ class _NoteScreenState extends State<NoteScreen> {
       builder: (sheetContext) {
         return _CreateNoteSheet(
           initialTitle: item.title,
-          initialSubtitle: item.subtitle,
+          initialSubtitle: item.content,
           isEdit: true,
-          onSave: (title, subtitle) async {
-            final updated = _NoteItem(
-              id: item.id,
-              title: title,
-              subtitle: subtitle,
-              isCompleted: item.isCompleted,
+          onSave: (title, subtitle) {
+            context.read<NoteBloc>().add(
+              UpdateNote(id: item.id, title: title, content: subtitle),
             );
-            setState(() {
-              _currentItems[index] = updated;
-            });
-            _saveData();
-            try {
-              await ApiClient().updateNote(updated.id, title, subtitle);
-            } catch (_) {}
           },
         );
       },
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DATA MODEL
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _NoteItem {
-  final String id;
-  final String title;
-  final String subtitle;
-  bool isCompleted;
-
-  _NoteItem({
-    String? id,
-    required this.title,
-    required this.subtitle,
-    this.isCompleted = false,
-  }) : id = id ?? const Uuid().v4();
-
-  Map<String, dynamic> toMap() => {
-        'id': id,
-        'title': title,
-        'subtitle': subtitle,
-        'isCompleted': isCompleted,
-      };
-
-  factory _NoteItem.fromMap(Map<String, dynamic> map) => _NoteItem(
-        id: map['id'],
-        title: map['title'] ?? '',
-        subtitle: map['subtitle'] ?? '',
-        isCompleted: map['isCompleted'] ?? false,
-      );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// TAB TOGGLE BUTTON
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _TabButton extends StatelessWidget {
   final String label;
@@ -470,10 +338,6 @@ class _TabButton extends StatelessWidget {
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// NOTE TASK ROW
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _NoteTaskRow extends StatelessWidget {
   final String title;
@@ -557,10 +421,6 @@ class _NoteTaskRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CREATE NOTE BOTTOM SHEET
-// ═══════════════════════════════════════════════════════════════════════════
-
 class _CreateNoteSheet extends StatefulWidget {
   final String? initialTitle;
   final String? initialSubtitle;
@@ -628,7 +488,6 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle bar
             Center(
               child: Container(
                 width: 40,
@@ -640,8 +499,6 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // Header
             Row(
               children: [
                 GestureDetector(
@@ -667,10 +524,7 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
                 const SizedBox(width: 28),
               ],
             ),
-
             const SizedBox(height: 24),
-
-            // ── Note Title ──
             const Text(
               'Note Title',
               style: TextStyle(
@@ -684,10 +538,7 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
               controller: _titleController,
               hintText: 'Write your note title..',
             ),
-
             const SizedBox(height: 20),
-
-            // ── Description ──
             const Text(
               'Description',
               style: TextStyle(
@@ -701,10 +552,7 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
               controller: _subtitleController,
               hintText: 'Write a short description..',
             ),
-
             const SizedBox(height: 24),
-
-            // ── Save Button ──
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -733,10 +581,6 @@ class _CreateNoteSheetState extends State<_CreateNoteSheet> {
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// NOTE INPUT FIELD
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _NoteInputField extends StatelessWidget {
   final TextEditingController controller;

@@ -257,7 +257,12 @@ class AuthSocialIconButton extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class AuthSocialRow extends StatelessWidget {
-  const AuthSocialRow({super.key});
+  final VoidCallback? onGoogleTap;
+
+  const AuthSocialRow({
+    super.key,
+    this.onGoogleTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +272,7 @@ class AuthSocialRow extends StatelessWidget {
         AuthSocialIconButton(
           text: 'G+',
           color: const Color(0xFFDB4437),
-          onTap: () {},
+          onTap: onGoogleTap ?? () {},
         ),
       ],
     );
