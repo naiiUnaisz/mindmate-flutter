@@ -154,6 +154,19 @@ String _moodToEmoji(String? mood) {
   }
 }
 
+String _emojiToMoodImage(String emoji) {
+  switch (emoji) {
+    case '😊':
+      return 'assets/maskot/Happy face (1).png';
+    case '😔':
+      return 'assets/maskot/down face (2).png';
+    case '😐':
+      return 'assets/maskot/chill face (1).png';
+    default:
+      return 'assets/maskot/chill face (1).png';
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MOOD PILL WIDGET
 // ═══════════════════════════════════════════════════════════════════════════
@@ -196,173 +209,33 @@ class _MoodPill extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: const BoxDecoration(
-              color: Color(0xFFD1C4E9), // Light purple bg for face
+              color: Color(0xFFD1C4E9),
               shape: BoxShape.circle,
             ),
-            child: ClipOval(
-              child: CustomPaint(
-                size: const Size(40, 40),
-                painter: _MiniMascotPainter(mood: mood),
-              ),
-            ),
+            child: mood == '-'
+                ? const Center(
+                    child: Text(
+                      '-',
+                      style: TextStyle(
+                        color: Color(0xFF2D1B4E),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : ClipOval(
+                    child: Image.asset(
+                      _emojiToMoodImage(mood),
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
           ),
         ],
       ),
     );
   }
-}
-
-/// Tiny mascot face painter for mood history circles.
-class _MiniMascotPainter extends CustomPainter {
-  final String mood;
-  _MiniMascotPainter({required this.mood});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final s = size.width / 40; // Scale based on 40x40 area
-
-    // Move face slightly down
-    final faceCy = cy + 2 * s;
-
-    // White face area (no body, just the face visor like in KawaiiFacePainter)
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx, faceCy + 2 * s),
-        width: 30 * s,
-        height: 22 * s,
-      ),
-      Paint()..color = const Color(0xFFFFF8F0),
-    );
-
-    // Eyes
-    const eyeColor = Color(0xFF2D1B4E);
-    final eyeY = faceCy + 1 * s;
-    if (mood == '-') {
-      // Future day: just draw a small dash in the center
-      canvas.drawLine(
-        Offset(cx - 3 * s, faceCy + 2 * s),
-        Offset(cx + 3 * s, faceCy + 2 * s),
-        Paint()
-          ..color = eyeColor
-          ..strokeWidth = 2 * s
-          ..strokeCap = StrokeCap.round,
-      );
-    } else if (mood == '😔') {
-      // Sad eyes
-      canvas.drawLine(
-        Offset(cx - 7 * s, eyeY + 2 * s),
-        Offset(cx - 4 * s, eyeY - 1 * s),
-        Paint()
-          ..color = eyeColor
-          ..strokeWidth = 2.5 * s
-          ..strokeCap = StrokeCap.round,
-      );
-      canvas.drawLine(
-        Offset(cx + 7 * s, eyeY + 2 * s),
-        Offset(cx + 4 * s, eyeY - 1 * s),
-        Paint()
-          ..color = eyeColor
-          ..strokeWidth = 2.5 * s
-          ..strokeCap = StrokeCap.round,
-      );
-    } else {
-      // Normal open eyes
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(cx - 6 * s, eyeY),
-          width: 4.5 * s,
-          height: 5.5 * s,
-        ),
-        Paint()..color = eyeColor,
-      );
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(cx + 6 * s, eyeY),
-          width: 4.5 * s,
-          height: 5.5 * s,
-        ),
-        Paint()..color = eyeColor,
-      );
-      // Eye shines
-      canvas.drawCircle(
-        Offset(cx - 5.5 * s, eyeY - 1.5 * s),
-        1 * s,
-        Paint()..color = Colors.white,
-      );
-      canvas.drawCircle(
-        Offset(cx + 6.5 * s, eyeY - 1.5 * s),
-        1 * s,
-        Paint()..color = Colors.white,
-      );
-    }
-
-    // Mouth
-    final mouthY = faceCy + 7 * s;
-    if (mood == '-') {
-      // No mouth for future days
-    } else if (mood == '😊') {
-      final p = Path()
-        ..moveTo(cx - 5 * s, mouthY - 1 * s)
-        ..quadraticBezierTo(cx, mouthY + 4 * s, cx + 5 * s, mouthY - 1 * s)
-        ..quadraticBezierTo(cx, mouthY + 2 * s, cx - 5 * s, mouthY - 1 * s);
-      canvas.drawPath(p, Paint()..color = const Color(0xFF4A148C));
-      canvas.save();
-      canvas.clipPath(p);
-      canvas.drawCircle(
-        Offset(cx, mouthY + 3 * s),
-        2.5 * s,
-        Paint()..color = const Color(0xFFE57373),
-      );
-      canvas.restore();
-    } else if (mood == '😔') {
-      final p = Path()
-        ..moveTo(cx - 4 * s, mouthY + 2 * s)
-        ..quadraticBezierTo(cx, mouthY - 2 * s, cx + 4 * s, mouthY + 2 * s);
-      canvas.drawPath(
-        p,
-        Paint()
-          ..color = const Color(0xFF4A148C)
-          ..strokeWidth = 2 * s
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round,
-      );
-    } else {
-      // Neutral
-      canvas.drawLine(
-        Offset(cx - 4 * s, mouthY),
-        Offset(cx + 4 * s, mouthY),
-        Paint()
-          ..color = const Color(0xFF4A148C)
-          ..strokeWidth = 2 * s
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-
-    // Cheeks
-    final cheekPaint = Paint()
-      ..color = const Color(0xFFF8BBD0).withValues(alpha: 0.7);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx - 10 * s, faceCy + 4 * s),
-        width: 5 * s,
-        height: 3.5 * s,
-      ),
-      cheekPaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx + 10 * s, faceCy + 4 * s),
-        width: 5 * s,
-        height: 3.5 * s,
-      ),
-      cheekPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _MiniMascotPainter old) => old.mood != mood;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

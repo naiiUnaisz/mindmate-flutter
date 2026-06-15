@@ -30,7 +30,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           context.read<AuthBloc>().add(AuthReset());
           Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('Password berhasil diubah. Silakan login kembali.'),
+            content: const Text('Password changed successfully. Please login again.'),
             backgroundColor: Colors.green.shade400,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),

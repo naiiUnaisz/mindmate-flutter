@@ -12,6 +12,7 @@ class ApiConfig {
   // ── User / Profile ──
   static const String user = '/user';
   static const String userUpdate = '/user/update';
+  static const String userProfile = '/user/profile';
 
   // ── Tasks (RESTful resource) ──
   static const String tasks = '/tasks';
@@ -27,20 +28,9 @@ class ApiConfig {
   static const String puzzles = '/puzzles';
   static const String puzzleUnlock = '/puzzles/unlock';
 
-  // ── Notes ──
-  static const String notes = '/notes';
-  static const String noteCreate = '/notes/create';
-  static const String noteUpdate = '/notes/update';
-  static const String noteDelete = '/notes/delete';
-
   // ── Streak ──
   static const String streak = '/streak';
   static const String streakIncrement = '/streak/increment';
-
-  // ── Trash ──
-  static const String trash = '/trash';
-  static const String trashRestore = '/trash/restore';
-  static const String trashDelete = '/trash/delete';
 
   // ── Change Email / Password ──
   static const String changeEmail = '/user/change-email';
@@ -55,7 +45,13 @@ class ApiConfig {
   // ── Rest Day ──
   static const String restDay = '/daily-record/rest-day';
 
+  // ── Daily Record ──
+  static const String dailyRecord = '/daily-record';
+
   // ── Mood ──
   static const String mood = '/mood';
   static const String moodHistory = '/mood/history';
+
+  // ── Notes ──
+  static const String notes = '/notes';
 }

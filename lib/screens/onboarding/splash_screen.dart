@@ -307,12 +307,11 @@ class _SplashScreenState extends State<SplashScreen>
                                   ),
                                 ),
                                 // Mascot character
-                                SizedBox(
+                                Image.asset(
+                                  'assets/maskot/Maskot say hi (2).png',
                                   width: 180,
                                   height: 200,
-                                  child: CustomPaint(
-                                    painter: MascotPainter(blinkProgress: 0.0),
-                                  ),
+                                  fit: BoxFit.contain,
                                 ),
                               ],
                             ),
@@ -354,7 +353,7 @@ class _SplashScreenState extends State<SplashScreen>
                               Opacity(
                                 opacity: _textOpacity.value,
                                 child: Text(
-                                  'Belajar dengan Menyenangkan',
+                                  'Learn with Fun',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,

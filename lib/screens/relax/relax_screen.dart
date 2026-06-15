@@ -374,7 +374,20 @@ class _RelaxScreenState extends State<RelaxScreen> {
             ),
           ),
           GestureDetector(
-            onTap: () => UnlockContentDialog.show(context, item: pick),
+            onTap: () async {
+              final paid = await UnlockContentDialog.show(context, item: pick);
+              if (paid && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${pick['name']} session started! Check your notifications.'),
+                    backgroundColor: Colors.green.shade400,
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              }
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(

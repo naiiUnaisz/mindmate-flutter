@@ -84,10 +84,6 @@ class ProfileScreen extends StatelessWidget {
                       label: 'Coins Detail',
                       onTap: () => Navigator.pushNamed(context, '/coin-detail'),
                     ),
-                    _MenuItem(
-                      label: 'Trash',
-                      onTap: () => Navigator.pushNamed(context, '/trash'),
-                    ),
                   ],
                 ),
               ),
@@ -553,193 +549,22 @@ class _LogoutDialog extends StatelessWidget {
 
           // Mascot
           Positioned(
-            top: 0,
-            child: SizedBox(
-              width: 140,
-              height: 120,
-              child: CustomPaint(painter: _SadMascotPainter()),
+            top: -5,
+            child: ClipRect(
+              child: Align(
+                alignment: Alignment.topCenter,
+                heightFactor: 0.7,
+                child: Image.asset(
+                  'assets/maskot/sad face (2).png',
+                  width: 165,
+                  height: 146,
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SAD MASCOT PAINTER
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _SadMascotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final primaryColor = const Color(0xFFB78AF7);
-    final faceColor = const Color(0xFFFFE4E6);
-    final darkPurple = const Color(0xFF8B5CF6);
-
-    // Slit position
-    final slitY = h * 0.95;
-
-    // Background of the slit
-    final slitRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(w / 2, slitY),
-        width: w * 0.7,
-        height: h * 0.1,
-      ),
-      const Radius.circular(20),
-    );
-    canvas.drawRRect(slitRect, Paint()..color = const Color(0xFFC4B5FD));
-
-    // Save layer to clip mascot body
-    canvas.save();
-    canvas.clipRect(Rect.fromLTRB(0, 0, w, slitY));
-
-    // Body
-    final bodyPath = Path()
-      ..moveTo(w * 0.2, slitY)
-      ..cubicTo(w * 0.1, slitY * 0.5, w * 0.2, h * 0.2, w * 0.5, h * 0.2)
-      ..cubicTo(w * 0.8, h * 0.2, w * 0.9, slitY * 0.5, w * 0.8, slitY)
-      ..close();
-    canvas.drawPath(bodyPath, Paint()..color = primaryColor);
-
-    // Arms
-    final leftArm = Path()
-      ..moveTo(w * 0.25, slitY)
-      ..quadraticBezierTo(w * 0.15, slitY * 0.8, w * 0.1, slitY);
-    canvas.drawPath(
-      leftArm,
-      Paint()
-        ..color = primaryColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 12
-        ..strokeCap = StrokeCap.round,
-    );
-
-    final rightArm = Path()
-      ..moveTo(w * 0.75, slitY)
-      ..quadraticBezierTo(w * 0.85, slitY * 0.8, w * 0.9, slitY);
-    canvas.drawPath(
-      rightArm,
-      Paint()
-        ..color = primaryColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 12
-        ..strokeCap = StrokeCap.round,
-    );
-
-    // Face
-    final faceRect = Rect.fromCenter(
-      center: Offset(w * 0.5, h * 0.6),
-      width: w * 0.55,
-      height: h * 0.45,
-    );
-    canvas.drawOval(faceRect, Paint()..color = faceColor);
-
-    // Cheeks
-    final cheekPaint = Paint()..color = const Color(0xFFFFA6D9);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.35, h * 0.65),
-        width: w * 0.12,
-        height: h * 0.08,
-      ),
-      cheekPaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(w * 0.65, h * 0.65),
-        width: w * 0.12,
-        height: h * 0.08,
-      ),
-      cheekPaint,
-    );
-
-    // Sad eyes
-    final eyePaint = Paint()
-      ..color = const Color(0xFF1F2937)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
-
-    // Left eye (slanted down)
-    final leftEye = Path()
-      ..moveTo(w * 0.40, h * 0.58)
-      ..quadraticBezierTo(w * 0.44, h * 0.56, w * 0.48, h * 0.61);
-    canvas.drawPath(leftEye, eyePaint);
-
-    // Right eye (slanted down)
-    final rightEye = Path()
-      ..moveTo(w * 0.60, h * 0.58)
-      ..quadraticBezierTo(w * 0.56, h * 0.56, w * 0.52, h * 0.61);
-    canvas.drawPath(rightEye, eyePaint);
-
-    // Sad mouth
-    final mouth = Path()
-      ..moveTo(w * 0.46, h * 0.73)
-      ..quadraticBezierTo(w * 0.5, h * 0.68, w * 0.54, h * 0.73);
-    canvas.drawPath(mouth, eyePaint);
-
-    // Tears
-    final tearPaint = Paint()..color = const Color(0xFF60A5FA);
-    // Left tear
-    final leftTear = Path()
-      ..moveTo(w * 0.39, h * 0.63)
-      ..quadraticBezierTo(w * 0.37, h * 0.67, w * 0.39, h * 0.69)
-      ..quadraticBezierTo(w * 0.41, h * 0.67, w * 0.39, h * 0.63);
-    canvas.drawPath(leftTear, tearPaint);
-
-    // Right tear
-    final rightTear = Path()
-      ..moveTo(w * 0.61, h * 0.63)
-      ..quadraticBezierTo(w * 0.59, h * 0.67, w * 0.61, h * 0.69)
-      ..quadraticBezierTo(w * 0.63, h * 0.67, w * 0.61, h * 0.63);
-    canvas.drawPath(rightTear, tearPaint);
-
-    canvas.restore(); // Remove clipping
-
-    // Draw the front lip of the slit
-    final frontSlit = Path()
-      ..moveTo(w * 0.15, slitY)
-      ..quadraticBezierTo(w * 0.5, slitY + h * 0.04, w * 0.85, slitY)
-      ..lineTo(w * 0.85, slitY + h * 0.03)
-      ..quadraticBezierTo(w * 0.5, slitY + h * 0.07, w * 0.15, slitY + h * 0.03)
-      ..close();
-    canvas.drawPath(
-      frontSlit,
-      Paint()..color = primaryColor.withValues(alpha: 0.8),
-    );
-
-    // Floating puzzle
-    final puzzleCenter = Offset(w * 0.65, h * 0.12);
-    canvas.drawCircle(puzzleCenter, w * 0.07, Paint()..color = darkPurple);
-    // puzzle piece dots
-    canvas.drawCircle(puzzleCenter, w * 0.018, Paint()..color = Colors.white);
-    canvas.drawCircle(
-      puzzleCenter + Offset(0, -w * 0.025),
-      w * 0.012,
-      Paint()..color = Colors.white,
-    );
-    canvas.drawCircle(
-      puzzleCenter + Offset(0, w * 0.025),
-      w * 0.012,
-      Paint()..color = Colors.white,
-    );
-    canvas.drawCircle(
-      puzzleCenter + Offset(-w * 0.025, 0),
-      w * 0.012,
-      Paint()..color = Colors.white,
-    );
-    canvas.drawCircle(
-      puzzleCenter + Offset(w * 0.025, 0),
-      w * 0.012,
-      Paint()..color = Colors.white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -90,3 +90,21 @@ class CollectDailyPuzzle extends ProfileEvent {
   @override
   List<Object?> get props => [puzzleId];
 }
+
+class SetCoins extends ProfileEvent {
+  final int amount;
+
+  const SetCoins({required this.amount});
+
+  @override
+  List<Object?> get props => [amount];
+}
+
+class SetStreak extends ProfileEvent {
+  final int streak;
+
+  const SetStreak({required this.streak});
+
+  @override
+  List<Object?> get props => [streak];
+}

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:application_belajar/bloc/auth/auth_bloc.dart';
 import 'package:application_belajar/bloc/auth/auth_event.dart';
 import 'package:application_belajar/bloc/auth/auth_state.dart';
@@ -25,48 +25,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  Future<void> _handleGoogleSignIn(BuildContext context) async {
-    try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return;
-
-      final String email = googleUser.email;
-      final String name = googleUser.displayName ?? email.split('@').first;
-
-      // Try login first
-      final res = await ApiClient().login(email, 'google_auth_${email.hashCode}');
-      if (res['status'] == 200) {
-        if (!context.mounted) return;
-        _emailController.text = email;
-        _loginSuccess(context, email);
-        return;
-      }
-
-      // If login fails, register with Google account
-      final regRes = await ApiClient().register(name, email, 'google_auth_${email.hashCode}');
-      if (regRes['status'] == 201) {
-        if (!context.mounted) return;
-        _emailController.text = email;
-        _loginSuccess(context, email);
-      } else {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(regRes['message']?.toString() ?? 'Google Sign-In gagal'),
-            backgroundColor: Colors.red.shade400,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Google Sign-In gagal. Periksa koneksi internet Anda.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  void _handleGoogleSignIn(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Google Sign-In akan segera hadir!'),
+        backgroundColor: Color(0xFF7C3AED),
+      ),
+    );
   }
 
   Future<void> _loginSuccess(BuildContext context, String email) async {

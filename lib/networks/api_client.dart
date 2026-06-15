@@ -119,7 +119,7 @@ class ApiClient {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      body: jsonEncode({'username': name, 'email': email, 'password': password}),
     );
     final body = _parseBody(res);
     if (res.statusCode == 201 && body['access_token'] != null) {
@@ -194,6 +194,12 @@ class ApiClient {
     return {'status': _extractStatus(res.statusCode, body), 'user': userData};
   }
 
+  Future<Map<String, dynamic>> getUserProfile() async {
+    final res = await _get(ApiConfig.userProfile);
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
   Future<Map<String, dynamic>> updateProfile({
     required String name,
     String username = '',
@@ -230,6 +236,10 @@ class ApiClient {
     return httpStatus;
   }
 
+  /// Try to parse a numeric task ID. Returns null if the ID is not a valid int
+  /// (e.g., a locally-generated UUID). Callers should skip the API call when null.
+  int? _tryTaskId(String id) => int.tryParse(id);
+
   // ── Tasks ──
   Future<Map<String, dynamic>> getTasks() async {
     final res = await _get(ApiConfig.tasks);
@@ -240,11 +250,16 @@ class ApiClient {
   Future<Map<String, dynamic>> createTask(
     String title,
     String? description,
-    DateTime deadline,
-  ) async {
+    DateTime deadline, {
+    String taskType = 'puzzle',
+  }) async {
     final res = await _post(
       ApiConfig.tasks,
-      body: jsonEncode({'title': title, 'description': description}),
+      body: jsonEncode({
+        'title': title,
+        'description': description,
+        'task_type': taskType,
+      }),
     );
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
@@ -253,26 +268,60 @@ class ApiClient {
   Future<Map<String, dynamic>> updateTask(
     String taskId,
     String title,
-    String? description,
-  ) async {
+    String? description, {
+    String? taskType,
+  }) async {
+    final id = _tryTaskId(taskId);
+    if (id == null) return {'status': 400, 'message': 'Invalid task ID'};
+    final body = <String, dynamic>{'title': title, 'description': description};
+    if (taskType != null) body['task_type'] = taskType;
     final res = await _put(
-      ApiConfig.taskById(int.parse(taskId)),
-      body: jsonEncode({'title': title, 'description': description}),
+      ApiConfig.taskById(id),
+      body: jsonEncode(body),
     );
-    final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
+    final parsed = _parseBody(res);
+    return {'status': res.statusCode, ...parsed};
   }
 
   Future<Map<String, dynamic>> deleteTask(String taskId) async {
-    final res = await _delete(ApiConfig.taskById(int.parse(taskId)));
+    final id = _tryTaskId(taskId);
+    if (id == null) return {'status': 400, 'message': 'Invalid task ID'};
+    final res = await _delete(ApiConfig.taskById(id));
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
   }
 
-  Future<Map<String, dynamic>> completeTask(String taskId) async {
-    final res = await _post(ApiConfig.taskCheck(int.parse(taskId)));
+  /// Complete a task. The response includes coins_earned, current_coin_balance,
+  /// current_streak, and source so the caller can update local state directly.
+  Future<Map<String, dynamic>> completeTask(
+    String taskId, {
+    String source = 'puzzle',
+  }) async {
+    final id = _tryTaskId(taskId);
+    if (id == null) return {'status': 400, 'message': 'Invalid task ID'};
+    final res = await _post(
+      ApiConfig.taskCheck(id),
+      body: jsonEncode({'source': source}),
+    );
     final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
+    return {
+      'status': res.statusCode,
+      ...body,
+      // Normalise the response data into the top level for convenience
+      if (body['data'] is Map<String, dynamic>)
+        ..._extractCheckData(body['data'] as Map<String, dynamic>),
+    };
+  }
+
+  Map<String, dynamic> _extractCheckData(Map<String, dynamic> data) {
+    return {
+      if (data['coins_earned'] != null) 'coins_earned': data['coins_earned'],
+      if (data['current_coin_balance'] != null)
+        'current_coin_balance': data['current_coin_balance'],
+      if (data['current_streak'] != null)
+        'current_streak': data['current_streak'],
+      if (data['puzzle_opened'] != null) 'puzzle_opened': data['puzzle_opened'],
+    };
   }
 
   // ── Coins ──
@@ -300,22 +349,6 @@ class ApiClient {
     return {'status': res.statusCode, ...body};
   }
 
-  // ── Puzzles ──
-  Future<Map<String, dynamic>> getPuzzles() async {
-    final res = await _get(ApiConfig.puzzles);
-    final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
-  }
-
-  Future<Map<String, dynamic>> unlockPuzzle(String puzzleId, int cost) async {
-    final res = await _post(
-      ApiConfig.puzzleUnlock,
-      body: jsonEncode({'puzzle_id': puzzleId, 'cost': cost}),
-    );
-    final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
-  }
-
   // ── Notes ──
   Future<Map<String, dynamic>> getNotes() async {
     final res = await _get(ApiConfig.notes);
@@ -325,31 +358,39 @@ class ApiClient {
 
   Future<Map<String, dynamic>> createNote(String title, String content) async {
     final res = await _post(
-      ApiConfig.noteCreate,
+      ApiConfig.notes,
       body: jsonEncode({'title': title, 'content': content}),
     );
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
   }
 
-  Future<Map<String, dynamic>> updateNote(
-    String noteId,
-    String title,
-    String content,
-  ) async {
+  Future<Map<String, dynamic>> updateNote(String id, String title, String content) async {
+    final nid = _tryTaskId(id) ?? int.tryParse(id);
+    final path = nid != null ? ApiConfig.notes + '/$nid' : ApiConfig.notes + '/$id';
     final res = await _put(
-      ApiConfig.noteUpdate,
-      body: jsonEncode({'id': noteId, 'title': title, 'content': content}),
+      path,
+      body: jsonEncode({'title': title, 'content': content}),
     );
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
   }
 
-  Future<Map<String, dynamic>> deleteNote(String noteId) async {
-    final res = await _delete(
-      ApiConfig.noteDelete,
-      body: jsonEncode({'id': noteId}),
-    );
+  Future<Map<String, dynamic>> deleteNote(String id) async {
+    final nid = _tryTaskId(id) ?? int.tryParse(id);
+    final path = nid != null ? ApiConfig.notes + '/$nid' : ApiConfig.notes + '/$id';
+    final res = await _delete(path);
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+Future<Map<String, dynamic>> getPuzzles() async {
+    final res = await _get(ApiConfig.puzzles);
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  Future<Map<String, dynamic>> unlockPuzzle() async {
+    final res = await _post(ApiConfig.puzzleUnlock);
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
   }
@@ -363,31 +404,6 @@ class ApiClient {
 
   Future<Map<String, dynamic>> incrementStreak() async {
     final res = await _post(ApiConfig.streakIncrement);
-    final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
-  }
-
-  // ── Trash ──
-  Future<Map<String, dynamic>> getTrash() async {
-    final res = await _get(ApiConfig.trash);
-    final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
-  }
-
-  Future<Map<String, dynamic>> restoreFromTrash(String taskId) async {
-    final res = await _post(
-      ApiConfig.trashRestore,
-      body: jsonEncode({'id': taskId}),
-    );
-    final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
-  }
-
-  Future<Map<String, dynamic>> deleteFromTrash(String taskId) async {
-    final res = await _delete(
-      ApiConfig.trashDelete,
-      body: jsonEncode({'id': taskId}),
-    );
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
   }
@@ -439,6 +455,14 @@ class ApiClient {
   // ── Relax / Apps ──
   Future<Map<String, dynamic>> getApps() async {
     final res = await _get(ApiConfig.apps);
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+
+  // ── Daily Record ──
+  Future<Map<String, dynamic>> getDailyRecord() async {
+    final res = await _get(ApiConfig.dailyRecord);
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
   }

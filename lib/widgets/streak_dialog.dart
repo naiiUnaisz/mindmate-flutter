@@ -38,7 +38,7 @@ class _StreakDialog extends StatelessWidget {
               children: [
                 // Main card
                 Container(
-                  margin: EdgeInsets.only(top: isSmall ? 60 : 80),
+                  margin: EdgeInsets.only(top: isSmall ? 150 : 160),
                   padding: EdgeInsets.fromLTRB(
                     24,
                     isSmall ? 50 : 70,
@@ -129,7 +129,7 @@ class _StreakDialog extends StatelessWidget {
 
                 // Close button
                 Positioned(
-                  top: isSmall ? 76 : 96,
+                  top: isSmall ? 166 : 176,
                   right: 16,
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
@@ -148,21 +148,20 @@ class _StreakDialog extends StatelessWidget {
                   ),
                 ),
 
-                // Mascot
-                Positioned(
-                  top: 0,
-                  child: SizedBox(
-                    width: isSmall ? 140 : 180,
-                    height: isSmall ? 120 : 160,
-                    child: CustomPaint(
-                      painter: _StreakMascotPainter(),
-                    ),
+                // Mascot — non-positioned, renders above the card
+                Padding(
+                  padding: EdgeInsets.only(top: isSmall ? 30 : 40),
+                  child: Image.asset(
+                    'assets/maskot/I got puzzle (2).png',
+                    width: 180,
+                    height: 160,
+                    fit: BoxFit.contain,
                   ),
                 ),
 
                 // Confetti Decoration
                 Positioned(
-                  top: isSmall ? 80 : 100,
+                  top: isSmall ? 170 : 180,
                   left: 0,
                   child: Transform.rotate(
                     angle: -math.pi / 6,
@@ -280,155 +279,3 @@ class _StreakDialog extends StatelessWidget {
   }
 }
 
-class _StreakMascotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final primaryColor = const Color(0xFFB78AF7);
-    final faceColor = const Color(0xFFFFE4E6);
-    
-    final slitY = h * 0.85;
-
-    // Confetti
-    final random = math.Random(42);
-    for (int i = 0; i < 15; i++) {
-      final cx = w * 0.5 + (random.nextDouble() - 0.5) * w * 1.5;
-      final cy = slitY - (random.nextDouble() * h * 0.9);
-      
-      final colorOptions = [
-        const Color(0xFFFCD34D), // Yellow
-        const Color(0xFFF472B6), // Pink
-        const Color(0xFF7C3AED), // Purple
-      ];
-      final color = colorOptions[random.nextInt(colorOptions.length)];
-      
-      canvas.save();
-      canvas.translate(cx, cy);
-      canvas.rotate(random.nextDouble() * math.pi);
-      canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: 12, height: 6), Paint()..color = color);
-      canvas.restore();
-    }
-    
-    // Slit
-    final slitRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(w/2, slitY), width: w * 0.7, height: h * 0.1),
-      const Radius.circular(20),
-    );
-    canvas.drawRRect(slitRect, Paint()..color = const Color(0xFFD8B4E2)); // Shadow color under mascot
-
-    canvas.save();
-    canvas.clipRect(Rect.fromLTRB(0, 0, w, slitY));
-
-    // Body
-    final bodyPath = Path()
-      ..moveTo(w * 0.2, slitY)
-      ..cubicTo(w * 0.1, slitY * 0.4, w * 0.2, h * 0.2, w * 0.5, h * 0.2)
-      ..cubicTo(w * 0.8, h * 0.2, w * 0.9, slitY * 0.4, w * 0.8, slitY)
-      ..close();
-    canvas.drawPath(bodyPath, Paint()..color = primaryColor);
-
-    // Left Arm (waving)
-    final leftArm = Path()
-      ..moveTo(w * 0.25, slitY * 0.9)
-      ..quadraticBezierTo(w * 0.05, slitY * 0.8, w * 0.05, slitY * 0.8);
-    canvas.drawPath(leftArm, Paint()..color = primaryColor..style = PaintingStyle.stroke..strokeWidth = 18..strokeCap = StrokeCap.round);
-    
-    // Right Arm (holding flame)
-    final rightArm = Path()
-      ..moveTo(w * 0.75, slitY * 0.9)
-      ..quadraticBezierTo(w * 0.95, slitY * 0.6, w * 0.85, slitY * 0.4);
-    canvas.drawPath(rightArm, Paint()..color = primaryColor..style = PaintingStyle.stroke..strokeWidth = 18..strokeCap = StrokeCap.round);
-
-    // Face
-    final faceRect = Rect.fromCenter(
-      center: Offset(w * 0.5, h * 0.6),
-      width: w * 0.55,
-      height: h * 0.4,
-    );
-    canvas.drawOval(faceRect, Paint()..color = faceColor);
-
-    // Cheeks
-    final cheekPaint = Paint()..color = const Color(0xFFFFA6D9);
-    canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.33, h * 0.65), width: w * 0.12, height: h * 0.08), cheekPaint);
-    canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.67, h * 0.65), width: w * 0.12, height: h * 0.08), cheekPaint);
-
-    // Winking Eyes
-    final eyePaint = Paint()
-      ..color = const Color(0xFF1F2937)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.5
-      ..strokeCap = StrokeCap.round;
-      
-    // Left eye (open)
-    canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.4, h * 0.55), width: w * 0.06, height: h * 0.1), Paint()..color = const Color(0xFF1F2937));
-    
-    // Right eye (winking ^)
-    final rightEye = Path()
-      ..moveTo(w * 0.57, h * 0.58)
-      ..quadraticBezierTo(w * 0.6, h * 0.53, w * 0.63, h * 0.58);
-    canvas.drawPath(rightEye, eyePaint);
-
-    // Happy mouth (open)
-    final mouthPaint = Paint()..color = const Color(0xFF831843);
-    final mouthPath = Path()
-      ..moveTo(w * 0.45, h * 0.65)
-      ..quadraticBezierTo(w * 0.5, h * 0.75, w * 0.55, h * 0.65)
-      ..close();
-    canvas.drawPath(mouthPath, mouthPaint);
-    
-    // Tongue
-    canvas.save();
-    canvas.clipPath(mouthPath);
-    canvas.drawCircle(Offset(w * 0.5, h * 0.72), w * 0.04, Paint()..color = const Color(0xFFF472B6));
-    canvas.restore();
-
-    // Draw Flame in right hand
-    _drawFlame(canvas, Offset(w * 0.85, slitY * 0.3), w * 0.15);
-    
-    canvas.restore(); // Remove clipping
-
-    // Front lip of slit
-    final frontSlit = Path()
-      ..moveTo(w * 0.15, slitY)
-      ..quadraticBezierTo(w * 0.5, slitY + h * 0.04, w * 0.85, slitY)
-      ..lineTo(w * 0.85, slitY + h * 0.03)
-      ..quadraticBezierTo(w * 0.5, slitY + h * 0.07, w * 0.15, slitY + h * 0.03)
-      ..close();
-    canvas.drawPath(frontSlit, Paint()..color = primaryColor.withValues(alpha: 0.8));
-    
-    // Floating badge above head
-    final badgeCenter = Offset(w * 0.65, h * 0.15);
-    canvas.drawCircle(badgeCenter, w * 0.08, Paint()..color = const Color(0xFF8B5CF6));
-    
-    // Draw tiny puzzle piece inside badge
-    final puzzlePaint = Paint()..color = Colors.white;
-    canvas.drawRect(Rect.fromCenter(center: badgeCenter, width: w * 0.06, height: w * 0.06), puzzlePaint);
-    canvas.drawCircle(badgeCenter + Offset(0, -w * 0.03), w * 0.015, puzzlePaint);
-    canvas.drawCircle(badgeCenter + Offset(-w * 0.03, 0), w * 0.015, puzzlePaint);
-  }
-
-  void _drawFlame(Canvas canvas, Offset center, double size) {
-    // Outer flame (Orange)
-    final outerFlame = Paint()..color = const Color(0xFFF97316);
-    final outerPath = Path()
-      ..moveTo(center.dx, center.dy - size)
-      ..quadraticBezierTo(center.dx - size, center.dy + size * 0.5, center.dx, center.dy + size)
-      ..quadraticBezierTo(center.dx + size, center.dy + size * 0.5, center.dx, center.dy - size)
-      ..close();
-    canvas.drawPath(outerPath, outerFlame);
-
-    // Inner flame (Yellow)
-    final innerFlame = Paint()..color = const Color(0xFFFCD34D);
-    final innerPath = Path()
-      ..moveTo(center.dx, center.dy - size * 0.4)
-      ..quadraticBezierTo(center.dx - size * 0.5, center.dy + size * 0.6, center.dx, center.dy + size * 0.8)
-      ..quadraticBezierTo(center.dx + size * 0.5, center.dy + size * 0.6, center.dx, center.dy - size * 0.4)
-      ..close();
-    canvas.drawPath(innerPath, innerFlame);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

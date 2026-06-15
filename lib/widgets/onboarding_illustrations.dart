@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:application_belajar/widgets/mascot_painter.dart';
 import 'package:application_belajar/widgets/sparkle_painter.dart';
 import 'package:application_belajar/widgets/coin_widget.dart';
 
@@ -60,11 +59,12 @@ class _WelcomeIllustrationState extends State<WelcomeIllustration>
             builder: (context, value, child) {
               return Transform.scale(scale: value, child: child);
             },
-            child: SizedBox(
-              width: 200,
-              height: 220,
-              child: CustomPaint(painter: MascotPainter()),
-            ),
+              child: Image.asset(
+                'assets/maskot/Maskot say hi (2).png',
+                width: 200,
+                height: 220,
+                fit: BoxFit.contain,
+              ),
           ),
         ],
       ),
@@ -121,8 +121,8 @@ class _TaskCoinsIllustrationState extends State<TaskCoinsIllustration>
                 child: _buildTaskCard(
                   icon: Icons.book_outlined,
                   iconColor: const Color(0xFF7C3AED),
-                  title: 'Tugas',
-                  subtitle: 'Catat Materi',
+                  title: 'Homework',
+                  subtitle: 'Take Notes',
                   width: 220,
                 ),
               ),
@@ -132,8 +132,8 @@ class _TaskCoinsIllustrationState extends State<TaskCoinsIllustration>
                 child: _buildTaskCard(
                   icon: Icons.wb_sunny_outlined,
                   iconColor: const Color(0xFF7C3AED),
-                  title: 'Harian',
-                  subtitle: 'Jemur',
+                  title: 'Daily',
+                  subtitle: 'Chores',
                   width: 200,
                 ),
               ),
@@ -143,8 +143,8 @@ class _TaskCoinsIllustrationState extends State<TaskCoinsIllustration>
                 child: _buildTaskCard(
                   icon: Icons.shopping_bag_outlined,
                   iconColor: const Color(0xFF7C3AED),
-                  title: 'Kebutuhan',
-                  subtitle: 'Belanja',
+                  title: 'Needs',
+                  subtitle: 'Shopping',
                   width: 180,
                   showDots: true,
                 ),
@@ -182,10 +182,11 @@ class _TaskCoinsIllustrationState extends State<TaskCoinsIllustration>
                 left: 10,
                 child: Transform.translate(
                   offset: Offset(0, -floatOffset * 0.4),
-                  child: SizedBox(
+                  child: Image.asset(
+                    'assets/maskot/Maskot.png',
                     width: 120,
                     height: 140,
-                    child: CustomPaint(painter: MascotPainter()),
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -330,10 +331,11 @@ class _PuzzleIllustrationState extends State<PuzzleIllustration>
                 right: 10,
                 child: Transform.translate(
                   offset: Offset(0, -pulse * 4),
-                  child: SizedBox(
+                  child: Image.asset(
+                    'assets/maskot/Maskot Thank you.png',
                     width: 110,
                     height: 130,
-                    child: CustomPaint(painter: MascotPainter()),
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),

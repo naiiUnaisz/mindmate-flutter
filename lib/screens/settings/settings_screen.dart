@@ -96,7 +96,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 12),
               _SettingsGroup(
                 children: [
-                  _SettingsItem(label: 'Change Email', onTap: () => Navigator.pushNamed(context, '/change-email')),
                   _SettingsItem(label: 'Change Password', onTap: () => Navigator.pushNamed(context, '/change-password'), isLast: true),
                 ],
               ),
@@ -197,7 +196,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: Column(
                   children: [
-                    _SettingsItem(label: 'Change Email', onTap: () => Navigator.pushNamed(context, '/change-email'), hasBackground: false),
                     _SettingsItem(label: 'Change Password', onTap: () => Navigator.pushNamed(context, '/change-password'), hasBackground: false, isLast: true),
                   ],
                 ),

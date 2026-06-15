@@ -85,7 +85,7 @@ class PuzzleCollectionScreen extends StatelessWidget {
                               : () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Selesaikan task harian untuk membuka puzzle ini!'),
+                                      content: Text('Complete daily tasks to unlock this puzzle!'),
                                       duration: Duration(seconds: 2),
                                     ),
                                   );

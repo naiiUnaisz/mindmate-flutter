@@ -1,11 +1,12 @@
 class AppConstants {
   // Puzzle
   static const int maxDailyPuzzleTasks = 6;
-  static const int baseCoinReward = 10;
-  static const int completionBonus = 50;
+  static const int baseCoinReward = 25;
+  static const int completionBonus = 100;
 
   // Relax
   static const int defaultRelaxDuration = 30; // minutes
+  static const int relaxPenaltyPerMinute = 5; // coins lost per minute overtime
 
   // Animations
   static const Duration shortDuration = Duration(milliseconds: 300);
@@ -14,5 +15,5 @@ class AppConstants {
 
   // Strings
   static const String appName = 'Mindmate';
-  static const String appTagline = 'Belajar dengan Menyenangkan';
+  static const String appTagline = 'Learn with Fun';
 }

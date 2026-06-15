@@ -79,7 +79,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   GestureDetector(
                     onTap: () {
                       context.read<AuthBloc>().add(ResendCodeRequested());
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Kode verifikasi baru telah dikirim'), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating, margin: const EdgeInsets.all(16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('A new verification code has been sent'), backgroundColor: Colors.green.shade400, behavior: SnackBarBehavior.floating, margin: const EdgeInsets.all(16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
                     },
                     child: const Text('Resend', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF7C3AED), decoration: TextDecoration.underline, decorationColor: Color(0xFF7C3AED))),
                   ),

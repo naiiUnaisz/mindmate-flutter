@@ -43,7 +43,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onLoginSubmitted(LoginSubmitted event, Emitter<AuthState> emit) async {
     if (event.email.trim().isEmpty || event.password.trim().isEmpty) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Silakan isi semua field'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Please fill all fields'));
       return;
     }
     emit(state.copyWith(status: AuthStatus.loading));
@@ -54,25 +54,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: res['message']?.toString() ?? 'Login gagal',
+          errorMessage: res['message']?.toString() ?? 'Login failed',
         ));
       }
     } catch (e) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Terjadi kesalahan jaringan'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Network error occurred'));
     }
   }
 
   Future<void> _onSignupSubmitted(SignupSubmitted event, Emitter<AuthState> emit) async {
     if (event.name.trim().isEmpty || event.email.trim().isEmpty || event.password.trim().isEmpty || event.confirmPassword.trim().isEmpty) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Silakan isi semua field'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Please fill all fields'));
       return;
     }
     if (event.password != event.confirmPassword) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Password tidak cocok'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Passwords do not match'));
       return;
     }
     if (event.name.trim().isEmpty) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Silakan masukkan nama'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Please enter your name'));
       return;
     }
     emit(state.copyWith(status: AuthStatus.loading));
@@ -83,17 +83,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: res['message']?.toString() ?? 'Registrasi gagal',
+          errorMessage: res['message']?.toString() ?? 'Registration failed',
         ));
       }
     } catch (e) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Terjadi kesalahan jaringan'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Network error occurred'));
     }
   }
 
   Future<void> _onForgotPasswordSubmitted(ForgotPasswordSubmitted event, Emitter<AuthState> emit) async {
     if (event.email.trim().isEmpty) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Silakan masukkan email'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Please enter your email'));
       return;
     }
     emit(state.copyWith(status: AuthStatus.loading));
@@ -104,17 +104,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: res['message']?.toString() ?? 'Gagal mengirim kode',
+          errorMessage: res['message']?.toString() ?? 'Failed to send code',
         ));
       }
     } catch (e) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Terjadi kesalahan jaringan'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Network error occurred'));
     }
   }
 
   Future<void> _onVerificationCodeSubmitted(VerificationCodeSubmitted event, Emitter<AuthState> emit) async {
     if (event.code.length < 4) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Masukkan 4 digit kode verifikasi'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Enter the 4-digit verification code'));
       return;
     }
     emit(state.copyWith(status: AuthStatus.loading));
@@ -125,11 +125,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: res['message']?.toString() ?? 'Kode verifikasi salah',
+          errorMessage: res['message']?.toString() ?? 'Verification code is incorrect',
         ));
       }
     } catch (e) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Terjadi kesalahan jaringan'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Network error occurred'));
     }
   }
 
@@ -146,11 +146,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onSaveNewPasswordSubmitted(SaveNewPasswordSubmitted event, Emitter<AuthState> emit) async {
     if (event.password.trim().isEmpty || event.confirmPassword.trim().isEmpty) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Silakan isi semua field'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Please fill all fields'));
       return;
     }
     if (event.password != event.confirmPassword) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Password tidak cocok'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Passwords do not match'));
       return;
     }
     emit(state.copyWith(status: AuthStatus.loading));
@@ -161,11 +161,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: res['message']?.toString() ?? 'Gagal mengubah password',
+          errorMessage: res['message']?.toString() ?? 'Failed to change password',
         ));
       }
     } catch (e) {
-      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Terjadi kesalahan jaringan'));
+      emit(state.copyWith(status: AuthStatus.failure, errorMessage: 'Network error occurred'));
     }
   }
 

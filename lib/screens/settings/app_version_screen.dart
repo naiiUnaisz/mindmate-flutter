@@ -51,6 +51,13 @@ class AppVersionScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Image.asset(
+                      'assets/maskot/Maskot.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 24),
                     const Text(
                       'Mindmate',
                       style: TextStyle(

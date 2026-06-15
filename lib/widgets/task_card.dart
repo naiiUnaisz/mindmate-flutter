@@ -137,7 +137,7 @@ class TaskCard extends StatelessWidget {
                 child: Text('Edit'),
               ),
               const PopupMenuItem(
-                child: Text('Hapus'),
+                child: Text('Delete'),
               ),
               const PopupMenuItem(
                 child: Text('Default Task'),

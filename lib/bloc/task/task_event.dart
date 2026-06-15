@@ -102,3 +102,7 @@ class ClearLastCompletionResult extends TaskEvent {}
 class SetMoodAsked extends TaskEvent {}
 
 class ClearTasks extends TaskEvent {}
+
+class RefreshPuzzles extends TaskEvent {}
+
+class UnlockPuzzlePiece extends TaskEvent {}

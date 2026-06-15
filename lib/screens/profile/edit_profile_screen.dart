@@ -143,7 +143,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             width: 110,
             height: 110,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+            errorBuilder: (_, _, _) => _avatarPlaceholder(),
           );
         }
       } else {
@@ -152,7 +152,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           width: 110,
           height: 110,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+          errorBuilder: (_, _, _) => _avatarPlaceholder(),
         );
       }
       return Stack(

@@ -27,7 +27,7 @@ import 'package:application_belajar/screens/settings/app_version_screen.dart';
 import 'package:application_belajar/screens/settings/privacy_policy_screen.dart';
 import 'package:application_belajar/screens/profile/puzzle_collection_screen.dart';
 import 'package:application_belajar/screens/profile/coin_detail_screen.dart';
-import 'package:application_belajar/screens/profile/trash_screen.dart';
+// import 'package:application_belajar/screens/profile/trash_screen.dart'; // File removed
 import 'package:application_belajar/networks/api_client.dart';
 import 'package:application_belajar/utils/theme_service.dart';
 
@@ -51,7 +51,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => TaskBloc()..add(LoadTasks())),
         BlocProvider(create: (_) => ProfileBloc()..add(LoadProfile())),
         BlocProvider(create: (_) => MoodBloc()..add(LoadMoodHistory())),
-        BlocProvider(create: (_) => NoteBloc()),
+        // BlocProvider(create: (_) => NoteBloc()), // Temporarily disabled - API methods not implemented
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeModeNotifier,
@@ -81,7 +81,7 @@ class MyApp extends StatelessWidget {
               '/privacy-policy': (_) => const PrivacyPolicyScreen(),
               '/puzzle-collection': (_) => const PuzzleCollectionScreen(),
               '/coin-detail': (_) => const CoinDetailScreen(),
-              '/trash': (_) => const TrashScreen(),
+              // '/trash': (_) => const TrashScreen(), // File removed
             },
           );
         },

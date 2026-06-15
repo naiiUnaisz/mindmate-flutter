@@ -44,14 +44,14 @@ class _TasksScreenState extends State<TasksScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tambah Tugas Baru',
+              'Add New Task',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 24),
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
-                hintText: 'Judul Tugas',
+                hintText: 'Task Title',
                 prefixIcon: Icon(Icons.title),
               ),
             ),
@@ -59,7 +59,7 @@ class _TasksScreenState extends State<TasksScreen> {
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(
-                hintText: 'Deskripsi (opsional)',
+                hintText: 'Description (optional)',
                 prefixIcon: Icon(Icons.description),
               ),
               maxLines: 3,
@@ -90,7 +90,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     const SizedBox(width: 12),
                     Text(
                       _selectedDate == null
-                          ? 'Pilih Tanggal'
+                          ? 'Select Date'
                           : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
@@ -105,7 +105,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 onPressed: () {
                   if (_titleController.text.isEmpty || _selectedDate == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Isi semua field yang diperlukan')),
+                      const SnackBar(content: Text('Please fill all required fields')),
                     );
                     return;
                   }
@@ -124,10 +124,10 @@ class _TasksScreenState extends State<TasksScreen> {
                   Navigator.pop(context);
 
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tugas berhasil ditambahkan')),
+                    const SnackBar(content: Text('Task added successfully')),
                   );
                 },
-                child: const Text('Tambah Tugas'),
+                child: const Text('Add Task'),
               ),
             ),
             const SizedBox(height: 24),
@@ -141,7 +141,7 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tugas'),
+        title: const Text('Tasks'),
       ),
       body: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
@@ -159,14 +159,14 @@ class _TasksScreenState extends State<TasksScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Belum ada tugas',
+                        'No tasks yet',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: AppColors.textLight,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Tambahkan tugas untuk memulai',
+                        'Add a task to get started',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textLight,
                         ),
@@ -203,7 +203,7 @@ class _TasksScreenState extends State<TasksScreen> {
                             context.read<TaskBloc>().add(AddToDailyPuzzle(task: task));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Tugas ditambahkan ke puzzle harian'),
+                                content: Text('Task added to daily puzzle'),
                               ),
                             );
                           },

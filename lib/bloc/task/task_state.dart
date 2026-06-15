@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:application_belajar/models/task_model.dart';
+import 'package:application_belajar/models/puzzle_model.dart';
 
 enum TaskStatus { initial, loading, success, failure }
 
@@ -7,11 +8,17 @@ class TaskCompletionResult {
   final int coinReward;
   final bool isStreakAchieved;
   final int completedTasksToday;
+  final int? currentCoinBalance;
+  final int? currentStreak;
+  final bool puzzleOpened;
 
   const TaskCompletionResult({
     required this.coinReward,
     required this.isStreakAchieved,
     required this.completedTasksToday,
+    this.currentCoinBalance,
+    this.currentStreak,
+    this.puzzleOpened = false,
   });
 }
 
@@ -25,6 +32,10 @@ class TaskState extends Equatable {
   final bool hasAskedMoodToday;
   final TaskCompletionResult? lastCompletionResult;
 
+  // Server-driven puzzle data
+  final DailyPuzzleData dailyPuzzleData;
+  final String? lastLoadedDate; // For daily reset detection
+
   const TaskState({
     this.status = TaskStatus.initial,
     this.errorMessage = '',
@@ -34,6 +45,8 @@ class TaskState extends Equatable {
     this.completedTasksToday = 0,
     this.hasAskedMoodToday = false,
     this.lastCompletionResult,
+    this.dailyPuzzleData = DailyPuzzleData.empty,
+    this.lastLoadedDate,
   });
 
   TaskState copyWith({
@@ -46,6 +59,8 @@ class TaskState extends Equatable {
     bool? hasAskedMoodToday,
     TaskCompletionResult? lastCompletionResult,
     bool clearCompletionResult = false,
+    DailyPuzzleData? dailyPuzzleData,
+    String? lastLoadedDate,
   }) {
     return TaskState(
       status: status ?? this.status,
@@ -57,6 +72,8 @@ class TaskState extends Equatable {
       hasAskedMoodToday: hasAskedMoodToday ?? this.hasAskedMoodToday,
       lastCompletionResult:
           clearCompletionResult ? null : lastCompletionResult ?? this.lastCompletionResult,
+      dailyPuzzleData: dailyPuzzleData ?? this.dailyPuzzleData,
+      lastLoadedDate: lastLoadedDate ?? this.lastLoadedDate,
     );
   }
 
@@ -70,5 +87,7 @@ class TaskState extends Equatable {
         completedTasksToday,
         hasAskedMoodToday,
         lastCompletionResult,
+        dailyPuzzleData,
+        lastLoadedDate,
       ];
 }

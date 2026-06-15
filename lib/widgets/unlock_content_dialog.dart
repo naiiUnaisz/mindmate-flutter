@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/widgets/mascot_painter.dart';
 import 'package:application_belajar/widgets/coin_widget.dart';
 
 class UnlockContentDialog extends StatelessWidget {
@@ -95,13 +94,13 @@ class UnlockContentDialog extends StatelessWidget {
     'robbery bob': 'https://play.google.com/store/apps/details?id=com.chillingo.robberybob.free.google',
   };
 
-  /// Show this dialog from anywhere
-  static Future<void> show(
+  /// Show this dialog from anywhere. Returns true if the user paid.
+  static Future<bool> show(
     BuildContext context, {
     required Map<String, dynamic> item,
-  }) {
+  }) async {
     final name = (item['name'] as String? ?? '').toLowerCase();
-    return showDialog(
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.black54,
@@ -119,6 +118,7 @@ class UnlockContentDialog extends StatelessWidget {
         storeUrl: item['storeUrl'] ?? _storeUrls[name],
       ),
     );
+    return result ?? false;
   }
 
   static String _getDefaultDescription(String name) {
@@ -164,7 +164,7 @@ class UnlockContentDialog extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Koin tidak cukup! Selesaikan task untuk mendapatkan koin.'),
+            content: const Text('Not enough coins! Complete tasks to earn more coins.'),
             backgroundColor: Colors.red.shade400,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
@@ -175,9 +175,9 @@ class UnlockContentDialog extends StatelessWidget {
       return;
     }
 
-    // Deduct coins & close dialog
+    // Deduct coins & close dialog with success result
     context.read<ProfileBloc>().add(SpendCoins(amount: coinPrice));
-    Navigator.pop(context);
+    Navigator.pop(context, true);
 
     // 1) Try to open directly in the app (NOT browser)
     if (appUrl != null && appUrl!.isNotEmpty) {
@@ -205,7 +205,7 @@ class UnlockContentDialog extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$appName belum terinstall. Mengarahkan ke Play Store...'),
+            content: Text('$appName is not installed. Redirecting to Play Store...'),
             backgroundColor: Colors.orange.shade400,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
@@ -220,7 +220,7 @@ class UnlockContentDialog extends StatelessWidget {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$appName tidak ditemukan. Silakan install dari Play Store.'),
+          content: Text('$appName not found. Please install from the Play Store.'),
           backgroundColor: Colors.orange.shade400,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
@@ -269,12 +269,11 @@ class UnlockContentDialog extends StatelessWidget {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: SizedBox(
+                    child: Image.asset(
+                      'assets/maskot/Maskot say hi (2).png',
                       width: 120,
                       height: 120,
-                      child: CustomPaint(
-                        painter: MascotPainter(waveArm: true),
-                      ),
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),

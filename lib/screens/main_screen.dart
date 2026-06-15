@@ -41,7 +41,7 @@ class MainScreenState extends State<MainScreen> {
     final taskState = context.read<TaskBloc>().state;
     if (taskState.dailyPuzzleTasks.length >= AppConstants.maxDailyPuzzleTasks) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('To do hari ini sudah penuh!')),
+        const SnackBar(content: Text('Today\'s to-do list is full!')),
       );
       return;
     }

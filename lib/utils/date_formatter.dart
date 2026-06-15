@@ -8,19 +8,19 @@ class DateFormatter {
     final dateToCheck = DateTime(date.year, date.month, date.day);
 
     if (dateToCheck == today) {
-      return 'Hari ini';
+      return 'Today';
     } else if (dateToCheck == yesterday) {
-      return 'Kemarin';
+      return 'Yesterday';
     } else {
-      return DateFormat('dd MMM yyyy', 'id_ID').format(date);
+      return DateFormat('dd MMM yyyy', 'en_US').format(date);
     }
   }
 
   static String formatTime(DateTime date) {
-    return DateFormat('HH:mm', 'id_ID').format(date);
+    return DateFormat('HH:mm', 'en_US').format(date);
   }
 
   static String formatDateTime(DateTime date) {
-    return DateFormat('dd MMM yyyy HH:mm', 'id_ID').format(date);
+    return DateFormat('dd MMM yyyy HH:mm', 'en_US').format(date);
   }
 }
