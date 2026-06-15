@@ -9,7 +9,6 @@ import 'package:application_belajar/networks/api_client.dart';
 class NoteBloc extends Bloc<NoteEvent, NoteState> {
   final ApiClient _client = ApiClient();
   String? _userEmail;
-  bool _loaded = false;
 
   String _prefKey(String key) =>
       _userEmail != null ? '${_userEmail}_$key' : 'guest_$key';
@@ -53,8 +52,7 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     LoadNotes event,
     Emitter<NoteState> emit,
   ) async {
-    if (_loaded) return;
-    _loaded = true;
+    if (state.status == NoteStatus.success) return;
 
     await _ensureUserEmail();
     final prefs = await SharedPreferences.getInstance();
@@ -65,6 +63,8 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
       items = _loadFromCache(cached);
     }
 
+    emit(state.copyWith(status: NoteStatus.success, notes: items));
+
     // Try API to enrich data
     try {
       final res = await _client.getNotes();
@@ -73,7 +73,6 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
             .map((e) => NoteItem.fromMap(e as Map<String, dynamic>))
             .toList();
 
-        // Merge: API items + local cache items (local wins on conflict)
         for (final apiItem in apiList) {
           final idx = items.indexWhere((n) => n.id == apiItem.id);
           if (idx < 0) {
@@ -81,10 +80,14 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
           }
         }
         await _saveToPrefs(items);
+        emit(state.copyWith(status: NoteStatus.success, notes: items));
       }
-    } catch (_) {}
-
-    emit(state.copyWith(status: NoteStatus.success, notes: items));
+    } catch (_) {
+      emit(state.copyWith(
+        status: NoteStatus.success,
+        errorMessage: 'Gagal memuat catatan dari server',
+      ));
+    }
   }
 
   Future<void> _onAddNote(
@@ -104,18 +107,22 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     await _saveToPrefs(updated);
 
     try {
-      final res = await _client.createNote(event.title, event.content);
+      final res = await _client.createNote(event.title, event.content, tab: event.tab);
       if (res['status'] == 200 || res['status'] == 201) {
         final data = res['data'];
         if (data is Map<String, dynamic>) {
-          final apiNote = NoteItem.fromMap(data);
+          final apiNote = NoteItem.fromMap(data).copyWith(tab: event.tab);
           final synced = updated.map((n) =>
               n.id == localId ? apiNote : n).toList();
           emit(state.copyWith(notes: synced));
           await _saveToPrefs(synced);
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      emit(state.copyWith(
+        errorMessage: 'Gagal menyimpan catatan ke server',
+      ));
+    }
   }
 
   Future<void> _onUpdateNote(
@@ -133,7 +140,11 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
 
     try {
       await _client.updateNote(event.id, event.title, event.content);
-    } catch (_) {}
+    } catch (_) {
+      emit(state.copyWith(
+        errorMessage: 'Gagal memperbarui catatan',
+      ));
+    }
   }
 
   Future<void> _onDeleteNote(
@@ -146,7 +157,11 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
 
     try {
       await _client.deleteNote(event.id);
-    } catch (_) {}
+    } catch (_) {
+      emit(state.copyWith(
+        errorMessage: 'Gagal menghapus catatan',
+      ));
+    }
   }
 
   Future<void> _onCompleteNote(
@@ -162,10 +177,18 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     emit(state.copyWith(notes: updated));
     await _saveToPrefs(updated);
 
+    final toggled = updated.firstWhere((n) => n.id == event.id);
+
     try {
-      final note = state.notes.firstWhere((n) => n.id == event.id);
-      await _client.updateNote(event.id, note.title, note.content);
-    } catch (_) {}
+      await _client.updateNote(
+        event.id, toggled.title, toggled.content,
+        isCompleted: toggled.isCompleted,
+      );
+    } catch (_) {
+      emit(state.copyWith(
+        errorMessage: 'Gagal memperbarui status catatan',
+      ));
+    }
   }
 
   Future<void> _onMoveNote(
@@ -182,7 +205,6 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
 
   void _onClearNotes(ClearNotes event, Emitter<NoteState> emit) {
     _userEmail = null;
-    _loaded = false;
     emit(const NoteState());
   }
 }

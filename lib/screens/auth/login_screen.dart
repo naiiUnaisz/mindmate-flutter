@@ -12,8 +12,6 @@ import 'package:application_belajar/bloc/profile/profile_bloc.dart';
 import 'package:application_belajar/bloc/profile/profile_event.dart';
 import 'package:application_belajar/bloc/mood/mood_bloc.dart';
 import 'package:application_belajar/bloc/mood/mood_event.dart';
-import 'package:application_belajar/networks/api_client.dart';
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -32,18 +30,6 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Color(0xFF7C3AED),
       ),
     );
-  }
-
-  Future<void> _loginSuccess(BuildContext context, String email) async {
-    context.read<AuthBloc>().add(AuthReset());
-    final prefs = await SharedPreferences.getInstance();
-    if (!context.mounted) return;
-    await prefs.setString('current_user_email', email);
-    if (!context.mounted) return;
-    context.read<MoodBloc>().add(LoadMoodHistory());
-    context.read<TaskBloc>().add(LoadTasks());
-    context.read<ProfileBloc>().add(LoadProfile());
-    Navigator.of(context).pushNamedAndRemoveUntil('/main', (_) => false);
   }
 
   @override

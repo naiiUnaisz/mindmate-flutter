@@ -51,7 +51,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => TaskBloc()..add(LoadTasks())),
         BlocProvider(create: (_) => ProfileBloc()..add(LoadProfile())),
         BlocProvider(create: (_) => MoodBloc()..add(LoadMoodHistory())),
-        // BlocProvider(create: (_) => NoteBloc()), // Temporarily disabled - API methods not implemented
+        BlocProvider(create: (_) => NoteBloc()),
       ],
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeModeNotifier,

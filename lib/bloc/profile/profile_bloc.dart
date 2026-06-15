@@ -436,15 +436,23 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
               // Parse restday_quota & reset used count (new week)
               final apiQuota =
-                  int.tryParse((data['restday_quota'] ?? 1).toString()) ?? 1;
-              final updatedQuota = apiQuota.clamp(1, 7);
-              emit(state.copyWith(restDayQuota: updatedQuota, restDayUsed: 0));
-              final p = await SharedPreferences.getInstance();
-              await p.setInt(_prefKey('rest_day_quota'), updatedQuota);
-              await p.setInt(_prefKey('rest_day_used'), 0);
+                  int.tryParse(
+                    (data['restday_quota'] ?? 0).toString(),
+                  ) ??
+                  0;
+              if (apiQuota > 0) {
+                emit(state.copyWith(
+                  restDayQuota: apiQuota,
+                  restDayUsed: 0,
+                ));
+                final p = await SharedPreferences.getInstance();
+                await p.setInt(_prefKey('rest_day_quota'), apiQuota);
+                await p.setInt(_prefKey('rest_day_used'), 0);
+              }
             }
           }
         } catch (_) {}
+
       }
     } catch (_) {}
 
@@ -461,8 +469,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           for (final p in data) {
             if (p is Map<String, dynamic>) {
               final pid = p['puzzle_id'] ?? p['id'];
-              final isUnlocked =
-                  p['unlocked'] == true || p['is_unlocked'] == true;
+              final isUnlocked = p['unlocked'] == true || p['is_unlocked'] == true;
               if (pid != null && (isUnlocked || !p.containsKey('unlocked'))) {
                 puzzlesFromApi.add(pid.toString());
               }
@@ -473,10 +480,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
               ..addAll(puzzlesFromApi);
             emit(state.copyWith(collectedPuzzles: mergedPuzzles));
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setStringList(
-              _prefKey('collected_puzzles'),
-              mergedPuzzles.toList(),
-            );
+            await prefs.setStringList(_prefKey('collected_puzzles'), mergedPuzzles.toList());
           }
         }
       }
@@ -716,7 +720,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final newUsed = state.restDayUsed + 1;
-    emit(state.copyWith(restDayDate: today, restDayUsed: newUsed));
+    emit(state.copyWith(
+      restDayDate: today,
+      restDayUsed: newUsed,
+    ));
     await _savePrefs(
       state.user.coins,
       state.user.streak,

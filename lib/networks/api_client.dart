@@ -356,28 +356,30 @@ class ApiClient {
     return {'status': res.statusCode, ...body};
   }
 
-  Future<Map<String, dynamic>> createNote(String title, String content) async {
+  Future<Map<String, dynamic>> createNote(String title, String content, {String tab = 'todo'}) async {
     final res = await _post(
       ApiConfig.notes,
-      body: jsonEncode({'title': title, 'content': content}),
+      body: jsonEncode({'title': title, 'content': content, 'tab': tab}),
     );
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};
   }
 
-  Future<Map<String, dynamic>> updateNote(String id, String title, String content) async {
-    final nid = _tryTaskId(id) ?? int.tryParse(id);
+  Future<Map<String, dynamic>> updateNote(String id, String title, String content, {bool? isCompleted}) async {
+    final nid = int.tryParse(id);
     final path = nid != null ? ApiConfig.notes + '/$nid' : ApiConfig.notes + '/$id';
+    final body = <String, dynamic>{'title': title, 'content': content};
+    if (isCompleted != null) body['is_completed'] = isCompleted;
     final res = await _put(
       path,
-      body: jsonEncode({'title': title, 'content': content}),
+      body: jsonEncode(body),
     );
-    final body = _parseBody(res);
-    return {'status': res.statusCode, ...body};
+    final parsed = _parseBody(res);
+    return {'status': res.statusCode, ...parsed};
   }
 
   Future<Map<String, dynamic>> deleteNote(String id) async {
-    final nid = _tryTaskId(id) ?? int.tryParse(id);
+    final nid = int.tryParse(id);
     final path = nid != null ? ApiConfig.notes + '/$nid' : ApiConfig.notes + '/$id';
     final res = await _delete(path);
     final body = _parseBody(res);
