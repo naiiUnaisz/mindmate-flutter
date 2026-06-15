@@ -1,40 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/bloc/auth/auth_bloc.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/bloc/mood/mood_bloc.dart';
-import 'package:application_belajar/bloc/mood/mood_event.dart';
-import 'package:application_belajar/bloc/note/note_bloc.dart';
-import 'package:application_belajar/screens/onboarding/splash_screen.dart';
-import 'package:application_belajar/screens/onboarding/onboarding_screen.dart';
-import 'package:application_belajar/screens/auth/login_screen.dart';
-import 'package:application_belajar/screens/auth/signup_screen.dart';
-import 'package:application_belajar/screens/auth/forgot_password_screen.dart';
-import 'package:application_belajar/screens/auth/verification_screen.dart';
-import 'package:application_belajar/screens/auth/new_password_screen.dart';
-import 'package:application_belajar/screens/main_screen.dart';
-import 'package:application_belajar/screens/tasks/add_task_screen.dart';
-import 'package:application_belajar/screens/tasks/note_screen.dart';
-import 'package:application_belajar/screens/profile/edit_profile_screen.dart';
-import 'package:application_belajar/screens/settings/settings_screen.dart';
-import 'package:application_belajar/screens/profile/change_password_screen.dart';
-import 'package:application_belajar/screens/profile/change_email_screen.dart';
-import 'package:application_belajar/screens/settings/app_version_screen.dart';
-import 'package:application_belajar/screens/settings/privacy_policy_screen.dart';
-import 'package:application_belajar/screens/profile/puzzle_collection_screen.dart';
-import 'package:application_belajar/screens/profile/coin_detail_screen.dart';
-// import 'package:application_belajar/screens/profile/trash_screen.dart'; // File removed
-import 'package:application_belajar/networks/api_client.dart';
-import 'package:application_belajar/utils/theme_service.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/bloc/auth/auth_bloc.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/bloc/mood/mood_bloc.dart';
+import 'package:mindmate/bloc/mood/mood_event.dart';
+import 'package:mindmate/bloc/note/note_bloc.dart';
+import 'package:mindmate/screens/onboarding/splash_screen.dart';
+import 'package:mindmate/screens/onboarding/onboarding_screen.dart';
+import 'package:mindmate/screens/auth/login_screen.dart';
+import 'package:mindmate/screens/auth/signup_screen.dart';
+import 'package:mindmate/screens/auth/forgot_password_screen.dart';
+import 'package:mindmate/screens/auth/verification_screen.dart';
+import 'package:mindmate/screens/auth/new_password_screen.dart';
+import 'package:mindmate/screens/main_screen.dart';
+import 'package:mindmate/screens/tasks/add_task_screen.dart';
+import 'package:mindmate/screens/tasks/note_screen.dart';
+import 'package:mindmate/screens/profile/edit_profile_screen.dart';
+import 'package:mindmate/screens/settings/settings_screen.dart';
+import 'package:mindmate/screens/profile/change_password_screen.dart';
+import 'package:mindmate/screens/profile/change_email_screen.dart';
+import 'package:mindmate/screens/settings/app_version_screen.dart';
+import 'package:mindmate/screens/settings/privacy_policy_screen.dart';
+import 'package:mindmate/screens/profile/puzzle_collection_screen.dart';
+import 'package:mindmate/screens/profile/coin_detail_screen.dart';
+// import 'package:mindmate/screens/profile/trash_screen.dart'; // File removed
+import 'package:mindmate/networks/api_client.dart';
+import 'package:mindmate/utils/notification_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ApiClient().init();
-  await loadThemePreference();
+  await NotificationHelper.init();
   runApp(const MyApp());
 }
 
@@ -53,17 +53,12 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => MoodBloc()..add(LoadMoodHistory())),
         BlocProvider(create: (_) => NoteBloc()),
       ],
-      child: ValueListenableBuilder<ThemeMode>(
-        valueListenable: themeModeNotifier,
-        builder: (context, mode, _) {
-          return MaterialApp(
-            title: 'Mindmate',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: mode,
-            home: isLoggedIn ? const MainScreen() : const SplashScreen(),
-            debugShowCheckedModeBanner: false,
-            routes: {
+      child: MaterialApp(
+        title: 'Mindmate',
+        theme: AppTheme.lightTheme,
+        home: const SplashScreen(),
+        debugShowCheckedModeBanner: false,
+        routes: {
               '/onboarding': (_) => const OnboardingScreen(),
               '/login': (_) => const LoginScreen(),
               '/signup': (_) => const SignupScreen(),
@@ -83,9 +78,7 @@ class MyApp extends StatelessWidget {
               '/coin-detail': (_) => const CoinDetailScreen(),
               // '/trash': (_) => const TrashScreen(), // File removed
             },
-          );
-        },
-      ),
+          ),
     );
   }
 }

@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindmate/widgets/mascot_painter.dart';
+import 'package:mindmate/networks/api_client.dart';
 
 /// MindMate Splash Screen with multi-phase animation.
 ///
@@ -190,7 +190,12 @@ class _SplashScreenState extends State<SplashScreen>
         if (status == AnimationStatus.completed) {
           await Future.delayed(const Duration(milliseconds: 800));
           if (!mounted) return;
-          Navigator.of(context).pushReplacementNamed('/onboarding');
+          final isLoggedIn = ApiClient().isLoggedIn;
+          if (isLoggedIn) {
+            Navigator.of(context).pushReplacementNamed('/main');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/onboarding');
+          }
         }
       });
     });
