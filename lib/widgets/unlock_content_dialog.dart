@@ -67,6 +67,36 @@ class UnlockContentDialog extends StatelessWidget {
     'robbery bob': 'https://play.google.com/store/apps/details?id=com.chillingo.robberybob.free.google',
   };
 
+  /// Android package names for direct app launch (no browser redirect)
+  static const Map<String, String> _androidPackages = {
+    'spotify': 'com.spotify.music',
+    'joox': 'com.tencent.ibg.joox',
+    'youtube music': 'com.google.android.apps.youtube.music',
+    'apple music': 'com.apple.android.music',
+    'netflix': 'com.netflix.mediaclient',
+    'disney+': 'com.disney.disneyplus',
+    'iqiyi': 'com.iqiyi.i18n',
+    'youtube': 'com.google.android.youtube',
+    'prime video': 'com.amazon.avod.thirdpartyclient',
+    'viu': 'com.vuclip.viu',
+    'wetv': 'com.tencent.ig.video',
+    'vidio': 'com.vidio.android',
+    'tiktok': 'com.zhiliaoapp.musically',
+    'instagram': 'com.instagram.android',
+    'snapchat': 'com.snapchat.android',
+    'line': 'jp.naver.line.android',
+    'facebook': 'com.facebook.katana',
+    'x': 'com.twitter.android',
+    'minecraft': 'com.mojang.minecraftpe',
+    'mobile legends': 'com.mobile.legends',
+    'roblox': 'com.roblox.client',
+    'genshin': 'com.miHoYo.GenshinImpact',
+    'block blast': 'com.block.juggle',
+    'subway surfers': 'com.kiloo.subwaysurf',
+    'hay day': 'com.supercell.hayday',
+    'robbery bob': 'com.chillingo.robberybob.free.google',
+  };
+
   /// Play Store URL mappings (fallback when app not installed)
   static const Map<String, String> _storeUrls = {
     'spotify': 'https://play.google.com/store/apps/details?id=com.spotify.music',
@@ -231,29 +261,47 @@ class UnlockContentDialog extends StatelessWidget {
     
     if (context.mounted) Navigator.pop(context, true);
 
-    // 1) Try to open directly in the app (NOT browser)
+    final nameLower = appName.toLowerCase();
+
+    // 1) Try to open directly in the native app using Android package name
+    final packageName = _androidPackages[nameLower];
+    if (packageName != null) {
+      try {
+        final launched = await launchUrl(
+          Uri.parse('https://$nameLower.com'),
+          mode: LaunchMode.externalNonBrowserApplication,
+        );
+        if (launched) return;
+      } catch (_) {}
+      // Fallback: try intent:// scheme with package name
+      try {
+        final intentUri = Uri.parse(
+          'intent://package/$packageName#Intent;package=$packageName;end',
+        );
+        final launched = await launchUrl(intentUri, mode: LaunchMode.externalNonBrowserApplication);
+        if (launched) return;
+      } catch (_) {}
+    }
+
+    // 2) Try app URL directly (some apps register HTTPS deep links)
     if (appUrl != null && appUrl!.isNotEmpty) {
       try {
         final launched = await launchUrl(
           Uri.parse(appUrl!),
           mode: LaunchMode.externalNonBrowserApplication,
         );
-        if (launched) return; // App opened successfully!
-      } catch (_) {
-        // App not installed — externalNonBrowserApplication throws if no app handles it
-      }
+        if (launched) return;
+      } catch (_) {}
     }
 
-    // 2) App not installed → redirect to Play Store
+    // 3) App not installed → redirect to Play Store
     if (storeUrl != null && storeUrl!.isNotEmpty) {
       try {
         await launchUrl(
           Uri.parse(storeUrl!),
           mode: LaunchMode.externalApplication,
         );
-      } catch (_) {
-        // Store also failed
-      }
+      } catch (_) {}
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

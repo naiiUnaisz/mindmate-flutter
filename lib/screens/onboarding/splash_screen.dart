@@ -190,12 +190,7 @@ class _SplashScreenState extends State<SplashScreen>
         if (status == AnimationStatus.completed) {
           await Future.delayed(const Duration(milliseconds: 800));
           if (!mounted) return;
-          final prefs = await SharedPreferences.getInstance();
-          final onboardingDone = prefs.getBool('onboarding_completed') ?? false;
-          if (!mounted) return;
-          Navigator.of(context).pushReplacementNamed(
-            onboardingDone ? '/login' : '/onboarding',
-          );
+          Navigator.of(context).pushReplacementNamed('/onboarding');
         }
       });
     });

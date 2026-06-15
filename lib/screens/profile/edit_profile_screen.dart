@@ -3,10 +3,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/models/user_model.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/models/user_model.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -229,7 +230,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       avatar: avatarBase64,
     );
     context.read<ProfileBloc>().add(UpdateUser(user: updated));
-    Navigator.of(context).pop();
+
+    // Wait for the update to complete before popping
+    await for (final state in context.read<ProfileBloc>().stream) {
+      if (state.status == ProfileStatus.updated) break;
+      if (state.status == ProfileStatus.error) break;
+    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -273,7 +280,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         color: AppColors.primary.withValues(alpha: 0.3),
                         width: 2,
                       ),
-                      color: const Color(0xFFF3E8FF),
+                      color: const Color(0xFFE8DFFF),
                       image: _profileImageBytes != null
                           ? DecorationImage(
                               image: MemoryImage(_profileImageBytes!),

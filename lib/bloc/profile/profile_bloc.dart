@@ -363,7 +363,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
               : (localGender.isNotEmpty ? localGender : state.user.gender),
           dateOfBirth:
               apiUser.dateOfBirth ?? (localDob ?? state.user.dateOfBirth),
-          avatar: apiUser.avatar ?? localAvatar,
+          avatar: localAvatar ?? apiUser.avatar,
         );
 
         final p = await SharedPreferences.getInstance();
@@ -499,6 +499,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(state.copyWith(status: ProfileStatus.updating, user: event.user));
 
     // 2. Simpan ke SharedPreferences segera (data tidak hilang saat app close)
+    //    Selalu simpan base64 avatar lokal supaya langsung tampil
     await _savePrefs(
       event.user.coins,
       event.user.streak,
@@ -515,7 +516,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     );
     await _saveProfileFields(event.user);
 
-    // 3. Kirim ke API dan update prefs dengan response dari backend
+    // 3. Kirim ke API — avatar field = "avatar" (multipart file)
     try {
       final res = await _client.updateProfile(
         name: event.user.name,
@@ -526,12 +527,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       );
       if (res['status'] == 200 && res['user'] is Map) {
         final apiUser = User.fromMap(res['user'] as Map<String, dynamic>);
+        // Selalu pakai base64 lokal untuk avatar supaya pasti tampil
+        // API URL mungkin tidak bisa diakses dari device
         final merged = apiUser.copyWith(
           coins: event.user.coins,
           streak: event.user.streak,
           earnedCoins: event.user.earnedCoins,
           spentCoins: event.user.spentCoins,
-          avatar: event.user.avatar ?? apiUser.avatar,
+          avatar: event.user.avatar,
         );
         emit(state.copyWith(status: ProfileStatus.updated, user: merged));
         await _saveProfileFields(merged);
@@ -539,7 +542,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       }
     } catch (_) {}
     // API gagal atau tidak 200 — tetap tandai updated karena data lokal sudah tersimpan
-    emit(state.copyWith(status: ProfileStatus.updated));
+    emit(state.copyWith(status: ProfileStatus.updated, user: event.user));
   }
 
   Future<void> _onEarnCoins(EarnCoins event, Emitter<ProfileState> emit) async {
