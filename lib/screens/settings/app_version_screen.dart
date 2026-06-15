@@ -52,7 +52,7 @@ class AppVersionScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.asset(
-                      'assets/maskot/Maskot.png',
+                      'assets/maskot/maskot.png',
                       width: 120,
                       height: 120,
                       fit: BoxFit.contain,
@@ -79,7 +79,7 @@ class AppVersionScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEBE5FB), // Light purple background
+                        color: const Color(0xFFE8DFFF), // Light purple background
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: const Text(

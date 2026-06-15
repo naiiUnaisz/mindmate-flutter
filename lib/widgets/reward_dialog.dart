@@ -30,7 +30,7 @@ class _RewardDialog extends StatelessWidget {
             margin: const EdgeInsets.only(top: 80), // Space for mascot
             padding: const EdgeInsets.fromLTRB(24, 70, 24, 24),
             decoration: BoxDecoration(
-              color: const Color(0xFFEBE5FB), // Light purple background
+              color: const Color(0xFFE8DFFF), // Light purple background
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -172,7 +172,7 @@ class _RewardDialog extends StatelessWidget {
           Positioned(
             top: 0,
             child: Image.asset(
-              'assets/maskot/I got puzzle 2.png',
+              'assets/maskot/i_got_puzzle_2b.png',
               width: 180,
               height: 160,
               fit: BoxFit.contain,

@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/networks/api_client.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/bloc/mood/mood_bloc.dart';
-import 'package:application_belajar/bloc/mood/mood_event.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/networks/api_client.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/bloc/mood/mood_bloc.dart';
+import 'package:mindmate/bloc/mood/mood_event.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -343,7 +343,7 @@ class _ProfileAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (avatar == null || avatar!.isEmpty) {
       return Container(
-        color: const Color(0xFFF3E8FF),
+        color: const Color(0xFFE8DFFF),
         child: const Icon(Icons.person, size: 36, color: Color(0xFF7C3AED)),
       );
     }
@@ -358,7 +358,7 @@ class _ProfileAvatar extends StatelessWidget {
       avatar!,
       fit: BoxFit.cover,
       errorBuilder: (ctx, err, st) => Container(
-        color: const Color(0xFFF3E8FF),
+        color: const Color(0xFFE8DFFF),
         child: const Icon(Icons.person, size: 36, color: Color(0xFF7C3AED)),
       ),
     );
@@ -462,7 +462,7 @@ class _LogoutDialog extends StatelessWidget {
             margin: const EdgeInsets.only(top: 60), // Space for mascot
             padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
             decoration: BoxDecoration(
-              color: const Color(0xFFEBE5FB), // Light purple background
+              color: const Color(0xFFE8DFFF), // Light purple background
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -555,7 +555,7 @@ class _LogoutDialog extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 heightFactor: 0.7,
                 child: Image.asset(
-                  'assets/maskot/sad face (2).png',
+                  'assets/maskot/sad_face_2.png',
                   width: 165,
                   height: 146,
                   fit: BoxFit.contain,

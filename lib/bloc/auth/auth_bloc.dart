@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/auth/auth_event.dart';
-import 'package:application_belajar/bloc/auth/auth_state.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/bloc/auth/auth_event.dart';
+import 'package:mindmate/bloc/auth/auth_state.dart';
+import 'package:mindmate/networks/api_client.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final ApiClient _client = ApiClient();

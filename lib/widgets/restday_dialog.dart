@@ -27,7 +27,7 @@ class _RestDayDialog extends StatelessWidget {
             margin: const EdgeInsets.only(top: 80),
             padding: const EdgeInsets.fromLTRB(24, 70, 24, 24),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3E8FF),
+              color: const Color(0xFFE8DFFF),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -44,7 +44,7 @@ class _RestDayDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Yakin ingin melakukan Rest Day?\nStreak kamu akan tetap aman!',
+                  'Are you sure you want to take a Rest Day?\nYour streak will stay safe!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -55,7 +55,7 @@ class _RestDayDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sisa Rest Day: $restDayRemaining',
+                  'Rest Days Left: $restDayRemaining',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -86,33 +86,10 @@ class _RestDayDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      restDayRemaining > 0 ? 'Yakin' : 'Habis',
+                      restDayRemaining > 0 ? 'Confirm' : 'None Left',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Batal button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF7658B2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(26),
-                      ),
-                    ),
-                    child: const Text(
-                      'Batal',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -148,8 +125,14 @@ class _RestDayDialog extends StatelessWidget {
             child: SizedBox(
               width: 180,
               height: 160,
-              child: CustomPaint(
-                painter: _RestDayMascotPainter(),
+              child: Image.asset(
+                'assets/maskot/down_face_2.png',
+                width: 180,
+                height: 160,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => CustomPaint(
+                  painter: _RestDayMascotPainter(),
+                ),
               ),
             ),
           ),

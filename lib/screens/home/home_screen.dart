@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/bloc/task/task_state.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/widgets/streak_dialog.dart';
-import 'package:application_belajar/widgets/puzzle_widget.dart';
-import 'package:application_belajar/widgets/reward_dialog.dart';
-import 'package:application_belajar/widgets/restday_dialog.dart';
-import 'package:application_belajar/widgets/mood_dialog.dart';
-import 'package:application_belajar/models/task_model.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/bloc/mood/mood_bloc.dart';
-import 'package:application_belajar/bloc/mood/mood_state.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/bloc/task/task_state.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/widgets/streak_dialog.dart';
+import 'package:mindmate/widgets/puzzle_widget.dart';
+import 'package:mindmate/widgets/reward_dialog.dart';
+import 'package:mindmate/widgets/restday_dialog.dart';
+import 'package:mindmate/widgets/mood_dialog.dart';
+import 'package:mindmate/models/task_model.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/bloc/mood/mood_bloc.dart';
+import 'package:mindmate/bloc/mood/mood_state.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,6 +25,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _moodDialogShown = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,9 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _tryShowMoodDialog() async {
-    final moodState = context.read<MoodBloc>().state;if (moodState.todayMood != null) return;
+    if (_moodDialogShown) return;
 
-    // Check dedicated flag: if mood already submitted today, skip dialog
+    final moodState = context.read<MoodBloc>().state;
+    if (moodState.todayMood != null) return;
+
     final prefs = await SharedPreferences.getInstance();
     final email = prefs.getString('current_user_email')?.toLowerCase();
     final prefix = email != null ? '${email}_' : 'guest_';
@@ -45,18 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (flag == today) return;
 
     if (moodState.status != MoodStatus.success) return;
-    if (await _wasMoodDialogShownToday()) return;
-    _showMoodDialog();
-  }
 
-  Future<bool> _wasMoodDialogShownToday() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastShown = prefs.getString('mood_dialog_last_shown');
-    if (lastShown == null) return false;
-    final now = DateTime.now();
-    final today =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    return lastShown == today;
+    _moodDialogShown = true;
+    _showMoodDialog();
   }
 
   void _showMoodDialog() {
@@ -73,43 +68,51 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       body: BlocListener<MoodBloc, MoodState>(
         listener: (context, moodState) {
-          if (moodState.todayMood == null &&
+          if (!_moodDialogShown &&
+              moodState.todayMood == null &&
               moodState.status == MoodStatus.success) {
             _tryShowMoodDialog();
           }
         },
         child: BlocListener<TaskBloc, TaskState>(
+          listenWhen: (prev, curr) =>
+              prev.lastCompletionResult == null &&
+              curr.lastCompletionResult != null,
           listener: (context, taskState) {
             final result = taskState.lastCompletionResult;
-            if (result != null) {
-              context.read<ProfileBloc>().add(
-                EarnCoins(amount: result.coinReward, reason: 'task'),
-              );
-              if (result.isStreakAchieved) {
+            if (result == null) return;
+
+            // Dispatch coin/streak events
+            context.read<ProfileBloc>().add(
+              EarnCoins(amount: result.coinReward, reason: 'task'),
+            );
+            if (result.isStreakAchieved) {
               context.read<ProfileBloc>().add(IncrementStreak());
               context.read<ProfileBloc>().add(
                 CollectDailyPuzzle(puzzleId: getDailyPuzzleId()),
               );
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (!context.mounted) return;
+            }
+
+            // Show dialog ONCE
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (!context.mounted) return;
+              if (result.isStreakAchieved) {
                 final streak = context.read<ProfileBloc>().state.user.streak;
                 await showStreakDialog(context, streakCount: streak);
                 if (!context.mounted) return;
                 Navigator.of(context).pushNamed('/puzzle-collection');
-              });
-            } else {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!context.mounted) return;
+              } else {
                 showRewardDialog(
                   context,
                   coins: result.coinReward,
                   showPuzzleReward: true,
                 );
-              });
-            }
-            context.read<TaskBloc>().add(ClearLastCompletionResult());
-          }
-        },
+              }
+              if (context.mounted) {
+                context.read<TaskBloc>().add(ClearLastCompletionResult());
+              }
+            });
+          },
         child: BlocBuilder<TaskBloc, TaskState>(
           builder: (context, taskState) {
             final profileState = context.watch<ProfileBloc>().state;
@@ -183,6 +186,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final profileState = context.read<ProfileBloc>().state;
+    final isRestDay = profileState.restDayDate != null &&
+        profileState.restDayDate == DateTime(
+          DateTime.now().year,
+          DateTime.now().month,
+          DateTime.now().day,
+        );
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -194,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           Text(
-            'Start building your progress',
+            isRestDay ? 'Rest Day Active' : 'Start building your progress',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -202,10 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Add a task to unlock\nyour first puzzle piece',
+          Text(
+            isRestDay
+                ? 'Enjoy your rest day! Tasks are locked.'
+                : 'Add a task to unlock\nyour first puzzle piece',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
               color: Color(0xFF9CA3AF),
@@ -213,26 +226,50 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton.icon(
-              onPressed: () => _showAddTaskSheet(context),
-              icon: const Icon(Icons.add_rounded, size: 20),
-              label: const Text(
-                'Add New Task',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+          if (!isRestDay)
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                onPressed: () => _showAddTaskSheet(context),
+                icon: const Icon(Icons.add_rounded, size: 20),
+                label: const Text(
+                  'Add New Task',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
-          ),
+          if (isRestDay)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.lock_outline_rounded, size: 18, color: Color(0xFF7C3AED)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Tasks locked during Rest Day',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF7C3AED),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -240,6 +277,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Shows the "Add New Task" or "Edit Task" bottom sheet overlay on top of the homepage.
   void _showAddTaskSheet(BuildContext context, {Task? taskToEdit}) {
+    final profileState = context.read<ProfileBloc>().state;
+    if (profileState.restDayDate != null) {
+      final now = DateTime.now();
+      if (profileState.restDayDate == DateTime(now.year, now.month, now.day)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rest Day is active! You cannot add or edit tasks.')),
+        );
+        return;
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -360,10 +408,14 @@ class _GreetingHeader extends StatelessWidget {
                       clipBehavior: Clip.none,
                       children: [
                         Center(
-                          child: SizedBox(
+                          child: Image.asset(
+                            isRestDay
+                                ? 'assets/maskot/down_face_2.png'
+                                : 'assets/maskot/chill_face_1.png',
                             width: 42,
                             height: 42,
-                            child: CustomPaint(
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => CustomPaint(
                               painter: MascotFacePainter(
                                 mood: isRestDay ? 'sleepy' : 'happy',
                               ),
@@ -688,11 +740,11 @@ class _TaskItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isCompleted ? const Color(0xFFEBE5FB) : Colors.white,
+        color: isCompleted ? const Color(0xFFE8DFFF) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isCompleted
-              ? const Color(0xFFEBE5FB)
+              ? const Color(0xFFE8DFFF)
               : const Color(0xFFE5E7EB),
         ),
       ),

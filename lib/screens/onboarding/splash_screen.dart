@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:application_belajar/widgets/mascot_painter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mindmate/widgets/mascot_painter.dart';
 
 /// MindMate Splash Screen with multi-phase animation.
 ///
@@ -185,13 +186,16 @@ class _SplashScreenState extends State<SplashScreen>
       });
 
       // Navigate after animation completes + a short pause
-      _mainController.addStatusListener((status) {
+      _mainController.addStatusListener((status) async {
         if (status == AnimationStatus.completed) {
-          Future.delayed(const Duration(milliseconds: 800), () {
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed('/onboarding');
-            }
-          });
+          await Future.delayed(const Duration(milliseconds: 800));
+          if (!mounted) return;
+          final prefs = await SharedPreferences.getInstance();
+          final onboardingDone = prefs.getBool('onboarding_completed') ?? false;
+          if (!mounted) return;
+          Navigator.of(context).pushReplacementNamed(
+            onboardingDone ? '/login' : '/onboarding',
+          );
         }
       });
     });
@@ -308,7 +312,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
                                 // Mascot character
                                 Image.asset(
-                                  'assets/maskot/Maskot say hi (2).png',
+                                  'assets/maskot/maskot_say_hi_2.png',
                                   width: 180,
                                   height: 200,
                                   fit: BoxFit.contain,

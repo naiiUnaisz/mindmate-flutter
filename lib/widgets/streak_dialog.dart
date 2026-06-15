@@ -46,7 +46,7 @@ class _StreakDialog extends StatelessWidget {
                     24,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3E8FF),
+                    color: const Color(0xFFE8DFFF),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Column(
@@ -152,7 +152,7 @@ class _StreakDialog extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.only(top: isSmall ? 30 : 40),
                   child: Image.asset(
-                    'assets/maskot/I got puzzle (2).png',
+                    'assets/maskot/i_got_puzzle_2.png',
                     width: 180,
                     height: 160,
                     fit: BoxFit.contain,
@@ -261,7 +261,7 @@ class _StreakDialog extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isActive ? const Color(0xFFF3E8FF) : const Color(0xFFF9FAFB),
+              color: isActive ? const Color(0xFFE8DFFF) : const Color(0xFFF9FAFB),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

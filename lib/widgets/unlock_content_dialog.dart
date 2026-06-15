@@ -1,10 +1,11 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/widgets/coin_widget.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/networks/api_client.dart';
+import 'package:mindmate/utils/notification_helper.dart';
+import 'package:mindmate/widgets/coin_widget.dart';
 
 class UnlockContentDialog extends StatelessWidget {
   final String appName;
@@ -16,6 +17,7 @@ class UnlockContentDialog extends StatelessWidget {
   final LinearGradient? gradient;
   final int coinPrice;
   final int duration;
+  final int? appId;
   final String? appUrl;
   final String? storeUrl;
 
@@ -30,6 +32,7 @@ class UnlockContentDialog extends StatelessWidget {
     this.gradient,
     required this.coinPrice,
     required this.duration,
+    this.appId,
     this.appUrl,
     this.storeUrl,
   });
@@ -114,6 +117,7 @@ class UnlockContentDialog extends StatelessWidget {
         gradient: item['gradient'],
         coinPrice: item['coin'] ?? 0,
         duration: item['time'] ?? 30,
+        appId: item['id'],
         appUrl: item['appUrl'] ?? _appUrls[name],
         storeUrl: item['storeUrl'] ?? _storeUrls[name],
       ),
@@ -175,9 +179,57 @@ class UnlockContentDialog extends StatelessWidget {
       return;
     }
 
-    // Deduct coins & close dialog with success result
-    context.read<ProfileBloc>().add(SpendCoins(amount: coinPrice));
-    Navigator.pop(context, true);
+    if (appId != null) {
+      final purchaseRes = await ApiClient().purchaseApp(appId!);
+      if (purchaseRes['status'] != 200 && purchaseRes['status'] != 201) {
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(purchaseRes['message'] ?? 'Failed to purchase app'),
+              backgroundColor: Colors.red.shade400,
+            ),
+          );
+        }
+        return;
+      }
+      
+      final startRes = await ApiClient().startRelaxSession(appId!, duration);
+      if (startRes['status'] != 200 && startRes['status'] != 201) {
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(startRes['message'] ?? 'Failed to start session'),
+              backgroundColor: Colors.red.shade400,
+            ),
+          );
+        }
+        return;
+      }
+      // Re-fetch profile to update coins
+      if (context.mounted) {
+        context.read<ProfileBloc>().add(LoadProfile());
+      }
+
+      // Schedule relax session reminder (2 min before expiry)
+      final expiredAt = startRes['data']?['expired_at'] as String?;
+      if (expiredAt != null) {
+        final expiry = DateTime.tryParse(expiredAt);
+        if (expiry != null) {
+          NotificationHelper.scheduleRelaxReminder(
+            appName: appName,
+            expiresAt: expiry,
+            minutesBeforeExpiry: 2,
+          );
+        }
+      }
+    } else {
+      // Deduct coins & close dialog with success result
+      context.read<ProfileBloc>().add(SpendCoins(amount: coinPrice));
+    }
+    
+    if (context.mounted) Navigator.pop(context, true);
 
     // 1) Try to open directly in the app (NOT browser)
     if (appUrl != null && appUrl!.isNotEmpty) {
@@ -236,62 +288,34 @@ class UnlockContentDialog extends StatelessWidget {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0ECFA),
-          borderRadius: BorderRadius.circular(28),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Top section with mascot + confetti ──
-            Stack(
-              clipBehavior: Clip.none,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          // Main card — exact size: 333x342, top: 74px
+          Container(
+            margin: const EdgeInsets.only(top: 74),
+            width: 333,
+            height: 342,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8DFFF),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: double.infinity,
-                  height: 140,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE0D4F5),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(28),
-                      topRight: Radius.circular(28),
-                    ),
-                  ),
-                  child: CustomPaint(
-                    painter: _ConfettiPainter(),
-                  ),
-                ),
-                // Mascot (centered, overflows top slightly)
-                Positioned(
-                  top: 10,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Image.asset(
-                      'assets/maskot/Maskot say hi (2).png',
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                // Floating coin (top-right of mascot)
-                const Positioned(
-                  top: 18,
-                  right: 50,
-                  child: CoinWidget(size: 24),
-                ),
+                const SizedBox(height: 6),
                 // Close button
-                Positioned(
-                  top: 12,
-                  right: 12,
+                Align(
+                  alignment: Alignment.centerRight,
                   child: GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
                       width: 32,
                       height: 32,
+                      margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
                         color: const Color(0xFF7C3AED).withValues(alpha: 0.25),
                         shape: BoxShape.circle,
@@ -300,141 +324,152 @@ class UnlockContentDialog extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
-
-            // ── Body content ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: Column(
-                children: [
-                  // Title
-                  const Text(
-                    'Unlock this Content?',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'You will unlock:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF7C3AED),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // App info card with price/duration inside
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+                // ── Body content ──
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     child: Column(
-                      children: [
-                        // App row
-                        Row(
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: gradient == null ? iconBg : null,
-                                gradient: gradient,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: imagePath != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.asset(imagePath!, width: 48, height: 48, fit: BoxFit.cover,
-                                        errorBuilder: (_, _, _) => Center(child: Icon(icon, color: iconColor, size: 24)),
-                                      ),
-                                    )
-                                  : Center(child: Icon(icon, color: iconColor, size: 24)),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(appName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
-                                  const SizedBox(height: 2),
-                                  Text(description, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF6B7280))),
-                                ],
-                              ),
+                    children: [
+                      const Text(
+                        'Unlock this Content?',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'You will unlock:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF7C3AED),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // App info card
+                      Container(
+                        width: 225,
+                        padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1, color: Color(0xFFF3F4F6)),
-                        const SizedBox(height: 10),
-                        // Price row
-                        _buildInfoRow('Price', '$coinPrice', isCoin: true),
-                        const SizedBox(height: 6),
-                        _buildInfoRow('Duration', '$duration minutes', isCoin: false),
-                        const SizedBox(height: 6),
-                        _buildInfoRow('Your coins', '$userCoins', isCoin: true),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Proceed text
-                  const Text(
-                    'Proceed with this purchase?',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF7658B2),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Pay button
-                  GestureDetector(
-                    onTap: () => _launchApp(context),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7658B2),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF7658B2).withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        'Pay $coinPrice Coins',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: gradient == null ? iconBg : null,
+                                    gradient: gradient,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: imagePath != null
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Image.asset(imagePath!, width: 48, height: 48, fit: BoxFit.cover,
+                                            errorBuilder: (_, _, _) => Center(child: Icon(icon, color: iconColor, size: 24)),
+                                          ),
+                                        )
+                                      : Center(child: Icon(icon, color: iconColor, size: 24)),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(appName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
+                                      const SizedBox(height: 2),
+                                      Text(description, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Color(0xFF6B7280))),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                            const SizedBox(height: 8),
+                            _buildInfoRow('Price', '$coinPrice', isCoin: true),
+                            const SizedBox(height: 4),
+                            _buildInfoRow('Duration', '$duration minutes', isCoin: false),
+                            const SizedBox(height: 4),
+                            _buildInfoRow('Your coins', '$userCoins', isCoin: true),
+                          ],
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Proceed with this purchase?',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF7658B2),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () => _launchApp(context),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7658B2),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF7658B2).withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'Pay $coinPrice Coins',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Mascot — protrudes from top of card
+          Positioned(
+            top: 0,
+            child: Image.asset(
+              'assets/maskot/unlockkonten.png',
+              width: 152,
+              height: 106,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.image_not_supported_outlined,
+                size: 60,
+                color: Color(0xFF7C3AED),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -456,77 +491,4 @@ class UnlockContentDialog extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Custom painter for confetti/sparkle decorations in the dialog header
-class _ConfettiPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final random = Random(42); // Fixed seed for consistent layout
-
-    // Confetti colors matching the design
-    final colors = [
-      const Color(0xFFFBBF24), // Gold/yellow
-      const Color(0xFF7C3AED), // Purple
-      const Color(0xFFF472B6), // Pink
-      const Color(0xFF34D399), // Green
-      const Color(0xFF60A5FA), // Blue
-      const Color(0xFFFB923C), // Orange
-    ];
-
-    // Draw small rectangles (confetti pieces)
-    for (int i = 0; i < 20; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = random.nextDouble() * size.height;
-      final w = 3.0 + random.nextDouble() * 6;
-      final h = 2.0 + random.nextDouble() * 4;
-      final angle = random.nextDouble() * pi;
-      final color = colors[random.nextInt(colors.length)];
-
-      canvas.save();
-      canvas.translate(x, y);
-      canvas.rotate(angle);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: w, height: h),
-          const Radius.circular(1),
-        ),
-        Paint()..color = color.withValues(alpha: 0.7),
-      );
-      canvas.restore();
-    }
-
-    // Draw small stars
-    for (int i = 0; i < 8; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = random.nextDouble() * size.height;
-      final starSize = 3.0 + random.nextDouble() * 5;
-      final color = colors[random.nextInt(colors.length)];
-
-      _drawStar(canvas, Offset(x, y), starSize, color.withValues(alpha: 0.8));
-    }
-  }
-
-  void _drawStar(Canvas canvas, Offset center, double size, Color color) {
-    final path = Path();
-    for (int i = 0; i < 4; i++) {
-      final angle = (i * pi / 2) - pi / 4;
-      final outerX = center.dx + cos(angle) * size;
-      final outerY = center.dy + sin(angle) * size;
-      final innerAngle = angle + pi / 4;
-      final innerX = center.dx + cos(innerAngle) * size * 0.35;
-      final innerY = center.dy + sin(innerAngle) * size * 0.35;
-      if (i == 0) {
-        path.moveTo(outerX, outerY);
-      } else {
-        path.lineTo(outerX, outerY);
-      }
-      path.lineTo(innerX, innerY);
-    }
-    path.close();
-    canvas.drawPath(path, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

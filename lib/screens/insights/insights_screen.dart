@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/bloc/mood/mood_bloc.dart';
-import 'package:application_belajar/bloc/mood/mood_state.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/bloc/mood/mood_bloc.dart';
+import 'package:mindmate/bloc/mood/mood_state.dart';
 
 class InsightsScreen extends StatelessWidget {
   const InsightsScreen({super.key});
@@ -157,13 +157,13 @@ String _moodToEmoji(String? mood) {
 String _emojiToMoodImage(String emoji) {
   switch (emoji) {
     case '😊':
-      return 'assets/maskot/Happy face (1).png';
-    case '😔':
-      return 'assets/maskot/down face (2).png';
+      return 'assets/maskot/happy_face_1.png';
     case '😐':
-      return 'assets/maskot/chill face (1).png';
+      return 'assets/maskot/down_face_2.png';
+    case '😢':
+      return 'assets/maskot/chill_face_1.png';
     default:
-      return 'assets/maskot/chill face (1).png';
+      return 'assets/maskot/chill_face_1.png';
   }
 }
 

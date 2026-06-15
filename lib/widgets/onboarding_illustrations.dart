@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:application_belajar/widgets/sparkle_painter.dart';
-import 'package:application_belajar/widgets/coin_widget.dart';
+import 'package:mindmate/widgets/sparkle_painter.dart';
+import 'package:mindmate/widgets/coin_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PAGE 1 ILLUSTRATION: Mascot with sparkles
@@ -60,7 +60,7 @@ class _WelcomeIllustrationState extends State<WelcomeIllustration>
               return Transform.scale(scale: value, child: child);
             },
               child: Image.asset(
-                'assets/maskot/Maskot say hi (2).png',
+                'assets/maskot/maskot_say_hi_2.png',
                 width: 200,
                 height: 220,
                 fit: BoxFit.contain,
@@ -183,7 +183,7 @@ class _TaskCoinsIllustrationState extends State<TaskCoinsIllustration>
                 child: Transform.translate(
                   offset: Offset(0, -floatOffset * 0.4),
                   child: Image.asset(
-                    'assets/maskot/Maskot.png',
+                    'assets/maskot/maskot.png',
                     width: 120,
                     height: 140,
                     fit: BoxFit.contain,
@@ -209,9 +209,9 @@ class _TaskCoinsIllustrationState extends State<TaskCoinsIllustration>
       width: width,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3E8FF),
+        color: const Color(0xFFE8DFFF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8D5FF), width: 1),
+        border: Border.all(color: const Color(0xFFE8DFFF), width: 1),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
@@ -332,7 +332,7 @@ class _PuzzleIllustrationState extends State<PuzzleIllustration>
                 child: Transform.translate(
                   offset: Offset(0, -pulse * 4),
                   child: Image.asset(
-                    'assets/maskot/Maskot Thank you.png',
+                    'assets/maskot/maskot_thank_you.png',
                     width: 110,
                     height: 130,
                     fit: BoxFit.contain,
@@ -352,7 +352,7 @@ class _PuzzleIllustrationState extends State<PuzzleIllustration>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8D5FF)),
+        border: Border.all(color: const Color(0xFFE8DFFF)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF7C3AED).withValues(alpha: 0.08),

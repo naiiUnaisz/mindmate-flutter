@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/screens/relax/relax_category_screen.dart';
-import 'package:application_belajar/widgets/unlock_content_dialog.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/screens/relax/relax_category_screen.dart';
+import 'package:mindmate/widgets/unlock_content_dialog.dart';
+import 'package:mindmate/widgets/absen_dialog.dart';
+import 'package:mindmate/networks/api_client.dart';
+import 'package:mindmate/utils/notification_helper.dart';
 
 class RelaxScreen extends StatefulWidget {
   const RelaxScreen({super.key});
@@ -20,6 +22,43 @@ class _RelaxScreenState extends State<RelaxScreen> {
   void initState() {
     super.initState();
     _loadApps();
+    _checkActiveSession();
+  }
+
+  Future<void> _checkActiveSession() async {
+    try {
+      final res = await ApiClient().getActiveSession();
+      if (res['status'] == 200 && res['data'] != null) {
+        final sessionData = res['data'];
+        if (sessionData is Map<String, dynamic>) {
+          final expiredAt = sessionData['expired_at'] as String?;
+          final appName = sessionData['app_name'] as String? ?? 'Entertainment';
+          final sessionId = sessionData['session_id'];
+          if (expiredAt != null) {
+            final expiry = DateTime.tryParse(expiredAt);
+            if (expiry != null) {
+              if (DateTime.now().isAfter(expiry)) {
+                // Session expired - show absen dialog
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      AbsenDialog.show(context, appName: appName, sessionId: sessionId);
+                    }
+                  });
+                }
+              } else {
+                // Session still active - schedule reminder if not already scheduled
+                NotificationHelper.scheduleRelaxReminder(
+                  appName: appName,
+                  expiresAt: expiry,
+                  minutesBeforeExpiry: 2,
+                );
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadApps() async {
@@ -38,6 +77,7 @@ class _RelaxScreenState extends State<RelaxScreen> {
 
   Map<String, dynamic> _mapApp(Map<String, dynamic> app) {
     return {
+      'id': app['id'],
       'name': app['name'] ?? '',
       'icon': Icons.apps,
       'imagePath': app['icon'] ?? '',
@@ -69,9 +109,9 @@ class _RelaxScreenState extends State<RelaxScreen> {
         'imagePath': 'assets/images/tiktok.jpg',
         'iconBg': Colors.black,
         'iconColor': Colors.white,
-        'coin': 30,
-        'time': 30,
-        'category': 'social',
+        'coin': 20,
+        'time': 15,
+        'category': 'social_media',
       },
       {
         'name': 'Instagram',
@@ -79,14 +119,14 @@ class _RelaxScreenState extends State<RelaxScreen> {
         'imagePath': 'assets/images/instagram.jpg',
         'iconBg': const Color(0xFFE1306C),
         'iconColor': Colors.white,
-        'coin': 30,
-        'time': 30,
+        'coin': 20,
+        'time': 15,
         'gradient': const LinearGradient(
           colors: [Color(0xFFf9ce34), Color(0xFFee2a7b), Color(0xFF6228d7)],
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
         ),
-        'category': 'social',
+        'category': 'social_media',
       },
       {
         'name': 'Spotify',
@@ -94,8 +134,8 @@ class _RelaxScreenState extends State<RelaxScreen> {
         'imagePath': 'assets/images/spotify.jpg',
         'iconBg': const Color(0xFF1DB954),
         'iconColor': Colors.black,
-        'coin': 30,
-        'time': 30,
+        'coin': 20,
+        'time': 15,
         'category': 'music',
       },
       {
@@ -104,8 +144,8 @@ class _RelaxScreenState extends State<RelaxScreen> {
         'imagePath': 'assets/images/roblox.jpg',
         'iconBg': const Color(0xFF0055D1),
         'iconColor': Colors.white,
-        'coin': 30,
-        'time': 30,
+        'coin': 20,
+        'time': 15,
         'category': 'game',
       },
       {
@@ -114,8 +154,8 @@ class _RelaxScreenState extends State<RelaxScreen> {
         'imagePath': 'assets/images/youtube.jpg',
         'iconBg': Colors.white,
         'iconColor': Color(0xFFFF0000),
-        'coin': 30,
-        'time': 30,
+        'coin': 100,
+        'time': 60,
         'category': 'movie',
       },
       {
@@ -124,8 +164,8 @@ class _RelaxScreenState extends State<RelaxScreen> {
         'imagePath': 'assets/images/block_blast.jpg',
         'iconBg': const Color(0xFF10B981),
         'iconColor': Colors.yellow,
-        'coin': 30,
-        'time': 30,
+        'coin': 20,
+        'time': 15,
         'gradient': const LinearGradient(
           colors: [Colors.blue, Colors.green, Colors.yellow, Colors.red],
           begin: Alignment.topLeft,
@@ -223,7 +263,7 @@ class _RelaxScreenState extends State<RelaxScreen> {
                       _buildCategoryItem(context, icon: Icons.music_note_outlined, label: 'Music', category: 'music'),
                       _buildCategoryItem(context, icon: Icons.movie_outlined, label: 'Movie', category: 'movie'),
                       _buildCategoryItem(context, icon: Icons.sports_esports_outlined, label: 'Game', category: 'game'),
-                      _buildCategoryItem(context, icon: Icons.chat_bubble_outline_rounded, label: 'Social', category: 'social'),
+                      _buildCategoryItem(context, icon: Icons.chat_bubble_outline_rounded, label: 'Social', category: 'social_media'),
                     ],
                   ),
 

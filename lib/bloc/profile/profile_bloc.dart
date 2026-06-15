@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/models/user_model.dart';
-import 'package:application_belajar/utils/constants.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/models/user_model.dart';
+import 'package:mindmate/utils/constants.dart';
+import 'package:mindmate/networks/api_client.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final ApiClient _client = ApiClient();
@@ -471,7 +471,11 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
               final pid = p['puzzle_id'] ?? p['id'];
               final isUnlocked = p['unlocked'] == true || p['is_unlocked'] == true;
               if (pid != null && (isUnlocked || !p.containsKey('unlocked'))) {
-                puzzlesFromApi.add(pid.toString());
+                var pidStr = pid.toString();
+                if (int.tryParse(pidStr) != null) {
+                  pidStr = 'puzzle_$pidStr';
+                }
+                puzzlesFromApi.add(pidStr);
               }
             }
           }
@@ -491,8 +495,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     UpdateUser event,
     Emitter<ProfileState> emit,
   ) async {
-    // 1. Optimistic update — emit langsung ke UI
-    emit(state.copyWith(user: event.user));
+    // 1. Emit updating status
+    emit(state.copyWith(status: ProfileStatus.updating, user: event.user));
 
     // 2. Simpan ke SharedPreferences segera (data tidak hilang saat app close)
     await _savePrefs(
@@ -522,7 +526,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       );
       if (res['status'] == 200 && res['user'] is Map) {
         final apiUser = User.fromMap(res['user'] as Map<String, dynamic>);
-        // Merge: gunakan data API untuk profile fields, tapi pertahankan coins/streak lokal
         final merged = apiUser.copyWith(
           coins: event.user.coins,
           streak: event.user.streak,
@@ -530,12 +533,13 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           spentCoins: event.user.spentCoins,
           avatar: event.user.avatar ?? apiUser.avatar,
         );
-        emit(state.copyWith(user: merged));
+        emit(state.copyWith(status: ProfileStatus.updated, user: merged));
         await _saveProfileFields(merged);
+        return;
       }
-    } catch (_) {
-      // API gagal — data lokal sudah tersimpan, tidak perlu rollback
-    }
+    } catch (_) {}
+    // API gagal atau tidak 200 — tetap tandai updated karena data lokal sudah tersimpan
+    emit(state.copyWith(status: ProfileStatus.updated));
   }
 
   Future<void> _onEarnCoins(EarnCoins event, Emitter<ProfileState> emit) async {
@@ -772,15 +776,33 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     CollectDailyPuzzle event,
     Emitter<ProfileState> emit,
   ) async {
+    try {
+      final res = await _client.unlockPuzzle();
+      if (res['status'] == 200 || res['status'] == 201) {
+        var data = res['data'] ?? res;
+        var pid = data['puzzle_piece'] ?? data['puzzle_id'] ?? data['id'];
+        if (pid != null) {
+          String pidStr = pid.toString();
+          if (int.tryParse(pidStr) != null) {
+            pidStr = 'puzzle_$pidStr';
+          }
+          if (!state.collectedPuzzles.contains(pidStr)) {
+            final updated = Set<String>.from(state.collectedPuzzles)..add(pidStr);
+            emit(state.copyWith(collectedPuzzles: updated));
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setStringList(_prefKey('collected_puzzles'), updated.toList());
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+
     if (state.collectedPuzzles.contains(event.puzzleId)) return;
     final updated = Set<String>.from(state.collectedPuzzles)
       ..add(event.puzzleId);
     emit(state.copyWith(collectedPuzzles: updated));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_prefKey('collected_puzzles'), updated.toList());
-    try {
-      await _client.unlockPuzzle();
-    } catch (_) {}
   }
 
   Future<void> _onUnlockPuzzle(

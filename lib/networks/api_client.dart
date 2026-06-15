@@ -1,7 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/networks/api_config.dart';
+import 'package:mindmate/networks/api_config.dart';
+
+String _fixAvatarUrl(String? url) {
+  if (url == null || url.isEmpty) return url ?? '';
+  if (url.startsWith('http://localhost') || url.startsWith('http://127.0.0.1')) {
+    return url.replaceFirst(RegExp(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?'),
+        'https://unaisah-digitallab.my.id');
+  }
+  return url;
+}
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._();
@@ -105,6 +114,9 @@ class ApiClient {
       await saveToken(body['access_token'] as String);
       await _saveEmail(email);
     }
+    if (body['user'] is Map && body['user']['avatar'] != null) {
+      body['user']['avatar'] = _fixAvatarUrl(body['user']['avatar'] as String?);
+    }
     return {'status': res.statusCode, ...body};
   }
 
@@ -119,7 +131,7 @@ class ApiClient {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode({'username': name, 'email': email, 'password': password}),
+      body: jsonEncode({'name': name, 'email': email, 'password': password, 'username': name}),
     );
     final body = _parseBody(res);
     if (res.statusCode == 201 && body['access_token'] != null) {
@@ -130,9 +142,11 @@ class ApiClient {
   }
 
   Future<void> apiLogout() async {
-    if (_token != null) {
-      await _post(ApiConfig.logout);
-    }
+    try {
+      if (_token != null) {
+        await _post(ApiConfig.logout);
+      }
+    } catch (_) {}
     await logout();
   }
 
@@ -191,12 +205,19 @@ class ApiClient {
         : body['user'] is Map
         ? body['user'] as Map<String, dynamic>
         : body;
+    if (userData['avatar'] != null) {
+      userData['avatar'] = _fixAvatarUrl(userData['avatar'] as String?);
+    }
     return {'status': _extractStatus(res.statusCode, body), 'user': userData};
   }
 
   Future<Map<String, dynamic>> getUserProfile() async {
     final res = await _get(ApiConfig.userProfile);
     final body = _parseBody(res);
+    final data = body['data'];
+    if (data is Map<String, dynamic> && data['avatar'] != null) {
+      data['avatar'] = _fixAvatarUrl(data['avatar'] as String?);
+    }
     return {'status': res.statusCode, ...body};
   }
 
@@ -207,26 +228,43 @@ class ApiClient {
     required DateTime? dateOfBirth,
     String? avatar,
   }) async {
-    final sendBody = <String, dynamic>{
-      'name': name,
-      'username': username,
-      // Backend requires lowercase: 'male' or 'female'
-      if (gender.isNotEmpty) 'gender': gender.toLowerCase(),
-    };
-    // Backend uses 'birthday' not 'date_of_birth'
+    final uri = _uri(ApiConfig.userUpdate);
+    final request = http.MultipartRequest('PUT', uri);
+    request.fields['name'] = name;
+    request.fields['username'] = username;
+    if (gender.isNotEmpty) request.fields['gender'] = gender.toLowerCase();
+    
     if (dateOfBirth != null) {
-      sendBody['birthday'] =
+      request.fields['birthday'] =
           '${dateOfBirth.year}-${dateOfBirth.month.toString().padLeft(2, '0')}-${dateOfBirth.day.toString().padLeft(2, '0')}';
     }
-    if (avatar != null && avatar.isNotEmpty) {
-      sendBody['avatar'] = avatar;
+
+    if (_token != null) {
+      request.headers['Authorization'] = 'Bearer $_token';
     }
-    final res = await _put(ApiConfig.userUpdate, body: jsonEncode(sendBody));
+    request.headers['Accept'] = 'application/json';
+
+    if (avatar != null && avatar.isNotEmpty && !avatar.startsWith('http')) {
+      try {
+        final bytes = base64Decode(avatar);
+        request.files.add(http.MultipartFile.fromBytes(
+          'avatar',
+          bytes,
+          filename: 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ));
+      } catch (_) {}
+    }
+
+    final streamedResponse = await request.send();
+    final res = await http.Response.fromStream(streamedResponse);
     final result = _parseBody(res);
-    // Response: {"success":true,"message":"...","data":{...user...}}
+    
     final userData = result['data'] is Map
         ? result['data'] as Map<String, dynamic>
         : result;
+    if (userData['avatar'] != null) {
+      userData['avatar'] = _fixAvatarUrl(userData['avatar'] as String?);
+    }
     return {'status': res.statusCode, 'user': userData, ...result};
   }
 
@@ -419,9 +457,7 @@ Future<Map<String, dynamic>> getPuzzles() async {
     final res = await _post(
       ApiConfig.changeEmail,
       body: jsonEncode({
-        'current_email': currentEmail,
-        'new_email': newEmail,
-        'confirm_email': confirmEmail,
+        'email': newEmail,
       }),
     );
     final body = _parseBody(res);
@@ -438,7 +474,7 @@ Future<Map<String, dynamic>> getPuzzles() async {
       body: jsonEncode({
         'current_password': currentPassword,
         'new_password': newPassword,
-        'confirm_password': confirmPassword,
+        'new_password_confirmation': confirmPassword,
       }),
     );
     final body = _parseBody(res);
@@ -461,6 +497,48 @@ Future<Map<String, dynamic>> getPuzzles() async {
     return {'status': res.statusCode, ...body};
   }
 
+  Future<Map<String, dynamic>> purchaseApp(int id) async {
+    final res = await _post(ApiConfig.purchaseApp(id));
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+  
+  Future<Map<String, dynamic>> startRelaxSession(int appId, int duration) async {
+    final res = await _post(
+      ApiConfig.relaxSessionStart,
+      body: jsonEncode({'app_id': appId, 'duration': duration}),
+    );
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  Future<Map<String, dynamic>> endRelaxSession(int sessionId, int lateMinutes) async {
+    final res = await _post(
+      ApiConfig.relaxSessionEnd,
+      body: jsonEncode({'session_id': sessionId, 'late_minutes': lateMinutes}),
+    );
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  Future<Map<String, dynamic>> getActiveSession() async {
+    final res = await _get(ApiConfig.relaxSessionActive);
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  Future<Map<String, dynamic>> getSessionHistory({int page = 1}) async {
+    final res = await _get('${ApiConfig.relaxSessionHistory}?page=$page');
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
+  Future<Map<String, dynamic>> completeAppSession() async {
+    final res = await _post(ApiConfig.appsComplete);
+    final body = _parseBody(res);
+    return {'status': res.statusCode, ...body};
+  }
+
 
   // ── Daily Record ──
   Future<Map<String, dynamic>> getDailyRecord() async {
@@ -476,7 +554,7 @@ Future<Map<String, dynamic>> getPuzzles() async {
     if (apiMood == 'normal') apiMood = 'neutral';
     final res = await _post(
       ApiConfig.mood,
-      body: jsonEncode({'mood_level': apiMood, 'date': date}),
+      body: jsonEncode({'mood_level': apiMood}),
     );
     final body = _parseBody(res);
     return {'status': res.statusCode, ...body};

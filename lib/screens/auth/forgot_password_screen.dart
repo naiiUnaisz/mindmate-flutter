@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/auth/auth_bloc.dart';
-import 'package:application_belajar/bloc/auth/auth_event.dart';
-import 'package:application_belajar/bloc/auth/auth_state.dart';
-import 'package:application_belajar/screens/auth/auth_widgets.dart';
+import 'package:mindmate/bloc/auth/auth_bloc.dart';
+import 'package:mindmate/bloc/auth/auth_event.dart';
+import 'package:mindmate/bloc/auth/auth_state.dart';
+import 'package:mindmate/screens/auth/auth_widgets.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -135,16 +135,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               );
                         },
                       ),
-
-                      const SizedBox(height: 32),
-
-                      // ── Or Login with divider ──
-                      const AuthOrDivider(),
-
-                      const SizedBox(height: 24),
-
-                      // ── Social login buttons ──
-                      const AuthSocialRow(),
 
                       const SizedBox(height: 48),
 

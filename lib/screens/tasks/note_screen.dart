@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/bloc/note/note_bloc.dart';
-import 'package:application_belajar/bloc/note/note_event.dart';
-import 'package:application_belajar/bloc/note/note_state.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/widgets/reward_dialog.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/bloc/note/note_bloc.dart';
+import 'package:mindmate/bloc/note/note_event.dart';
+import 'package:mindmate/bloc/note/note_state.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/widgets/reward_dialog.dart';
 
 class NoteScreen extends StatefulWidget {
   const NoteScreen({super.key});
@@ -43,7 +43,7 @@ class _NoteScreenState extends State<NoteScreen> {
                 SnackBar(
                   content: Text(state.errorMessage.isNotEmpty
                       ? state.errorMessage
-                      : 'Terjadi kesalahan'),
+                      : 'An error occurred'),
                   backgroundColor: Colors.redAccent,
                 ),
               );
@@ -87,7 +87,7 @@ class _NoteScreenState extends State<NoteScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _TabButton(
-                      label: 'To do List',
+                      label: 'To-Do List',
                       isActive: _activeTab == 0,
                       onTap: () => setState(() => _activeTab = 0),
                     ),
