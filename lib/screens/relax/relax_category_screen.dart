@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/widgets/unlock_content_dialog.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/widgets/unlock_content_dialog.dart';
 
 class RelaxCategoryScreen extends StatelessWidget {
   final String categoryTitle;
@@ -27,8 +27,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/spotify.jpg',
             const Color(0xFF1DB954),
             Colors.black,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Joox',
@@ -36,8 +36,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/joox.jpg',
             const Color(0xFF13CA66),
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Youtube Music',
@@ -45,8 +45,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/youtube_music.jpg',
             Colors.white,
             const Color(0xFFFF0000),
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Apple Music',
@@ -54,8 +54,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/apple_music.jpg',
             const Color(0xFFFA243C),
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
         ];
       case 'movie':
@@ -66,8 +66,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/netflix.jpg',
             Colors.black,
             const Color(0xFFE50914),
-            20,
-            30,
+            100,
+            60,
           ),
           _dummyItem(
             'Disney+',
@@ -75,8 +75,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/disney.jpg',
             const Color(0xFF113CCF),
             Colors.white,
-            20,
-            30,
+            100,
+            60,
             gradient: const LinearGradient(
               colors: [Color(0xFF00154F), Color(0xFF113CCF)],
               begin: Alignment.bottomLeft,
@@ -89,8 +89,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/iqiyi.jpg',
             const Color(0xFF00D150),
             Colors.white,
-            20,
-            30,
+            100,
+            60,
           ),
           _dummyItem(
             'Youtube',
@@ -98,8 +98,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/youtube.jpg',
             Colors.white,
             const Color(0xFFFF0000),
-            20,
-            30,
+            100,
+            60,
           ),
           _dummyItem(
             'Prime Video',
@@ -107,8 +107,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/prime_video.jpg',
             const Color(0xFF00A8E1),
             Colors.white,
-            20,
-            30,
+            100,
+            60,
           ),
           _dummyItem(
             'Viu',
@@ -116,8 +116,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/viu.jpg',
             const Color(0xFFFFCC00),
             Colors.white,
-            20,
-            30,
+            100,
+            60,
           ),
           _dummyItem(
             'WeTV',
@@ -125,8 +125,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/wetv.jpg',
             const Color(0xFF00C2FF),
             Colors.white,
-            20,
-            30,
+            100,
+            60,
           ),
           _dummyItem(
             'Vidio',
@@ -134,8 +134,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/vidio.jpg',
             const Color(0xFFE2002C),
             Colors.white,
-            20,
-            30,
+            100,
+            60,
           ),
         ];
       case 'game':
@@ -146,8 +146,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/minecraft.jpg',
             const Color(0xFF5B8731),
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Mobile Legends',
@@ -155,8 +155,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/mobile_legends.jpg',
             const Color(0xFF1F2B5B),
             Colors.amber,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Robbery Bob',
@@ -164,8 +164,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/robbery_bob.jpg',
             const Color(0xFF3B82F6),
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Genshin',
@@ -173,8 +173,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/genshin.jpg',
             Colors.white,
             const Color(0xFF3B82F6),
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Block Blast',
@@ -182,8 +182,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/block_blast.jpg',
             const Color(0xFF10B981),
             Colors.yellow,
-            30,
-            30,
+            20,
+            15,
             gradient: const LinearGradient(
               colors: [Colors.blue, Colors.green, Colors.yellow, Colors.red],
               begin: Alignment.topLeft,
@@ -196,8 +196,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/roblox.jpg',
             const Color(0xFF0055D1),
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Subway Surfers',
@@ -205,8 +205,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/subway_surfers.jpg',
             const Color(0xFFFACC15),
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Hay Day',
@@ -214,8 +214,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/hay_day.jpg',
             const Color(0xFFEAB308),
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
         ];
       case 'social media':
@@ -227,8 +227,8 @@ class RelaxCategoryScreen extends StatelessWidget {
             'assets/images/tiktok.jpg',
             Colors.black,
             Colors.white,
-            30,
-            30,
+            20,
+            15,
           ),
           _dummyItem(
             'Instagram',
@@ -237,7 +237,7 @@ class RelaxCategoryScreen extends StatelessWidget {
             const Color(0xFFE1306C),
             Colors.white,
             20,
-            30,
+            15,
             gradient: const LinearGradient(
               colors: [Color(0xFFf9ce34), Color(0xFFee2a7b), Color(0xFF6228d7)],
               begin: Alignment.bottomLeft,
@@ -251,7 +251,7 @@ class RelaxCategoryScreen extends StatelessWidget {
             const Color(0xFFFFFC00),
             Colors.black,
             20,
-            30,
+            15,
           ),
           _dummyItem(
             'Line',
@@ -260,7 +260,7 @@ class RelaxCategoryScreen extends StatelessWidget {
             const Color(0xFF00C300),
             Colors.white,
             20,
-            30,
+            15,
           ),
           _dummyItem(
             'Facebook',
@@ -269,7 +269,7 @@ class RelaxCategoryScreen extends StatelessWidget {
             const Color(0xFF1877F2),
             Colors.white,
             20,
-            30,
+            15,
           ),
           _dummyItem(
             'X',
@@ -278,7 +278,7 @@ class RelaxCategoryScreen extends StatelessWidget {
             Colors.black,
             Colors.white,
             20,
-            30,
+            15,
           ),
         ];
       default:

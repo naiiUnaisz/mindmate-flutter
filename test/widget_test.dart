@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/main.dart';
-import 'package:application_belajar/screens/onboarding/splash_screen.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/main.dart';
+import 'package:mindmate/screens/onboarding/splash_screen.dart';
+import 'package:mindmate/networks/api_client.dart';
 
 void main() {
   testWidgets('App renders SplashScreen when not logged in', (

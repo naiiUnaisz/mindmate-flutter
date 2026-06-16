@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/bloc/task/task_state.dart';
-import 'package:application_belajar/widgets/task_card.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/bloc/task/task_state.dart';
+import 'package:mindmate/widgets/task_card.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});

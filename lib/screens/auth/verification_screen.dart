@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/auth/auth_bloc.dart';
-import 'package:application_belajar/bloc/auth/auth_event.dart';
-import 'package:application_belajar/bloc/auth/auth_state.dart';
-import 'package:application_belajar/screens/auth/auth_widgets.dart';
+import 'package:mindmate/bloc/auth/auth_bloc.dart';
+import 'package:mindmate/bloc/auth/auth_event.dart';
+import 'package:mindmate/bloc/auth/auth_state.dart';
+import 'package:mindmate/screens/auth/auth_widgets.dart';
 
 class VerificationScreen extends StatefulWidget {
   const VerificationScreen({super.key});
@@ -86,10 +86,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 ])),
                 const SizedBox(height: 32),
                 AuthPrimaryButton(text: 'Next', onPressed: () => context.read<AuthBloc>().add(VerificationCodeSubmitted(code: _fullCode))),
-                const SizedBox(height: 32),
-                const AuthOrDivider(),
-                const SizedBox(height: 24),
-                AuthSocialRow(),
                 const SizedBox(height: 48),
                 const Center(child: Text("Don't have an account ?", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Color(0xFF6B7280)))),
                 const SizedBox(height: 16),

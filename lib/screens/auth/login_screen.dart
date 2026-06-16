@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:application_belajar/bloc/auth/auth_bloc.dart';
-import 'package:application_belajar/bloc/auth/auth_event.dart';
-import 'package:application_belajar/bloc/auth/auth_state.dart';
-import 'package:application_belajar/screens/auth/auth_widgets.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/bloc/mood/mood_bloc.dart';
-import 'package:application_belajar/bloc/mood/mood_event.dart';
+import 'package:mindmate/bloc/auth/auth_bloc.dart';
+import 'package:mindmate/bloc/auth/auth_event.dart';
+import 'package:mindmate/bloc/auth/auth_state.dart';
+import 'package:mindmate/screens/auth/auth_widgets.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/bloc/mood/mood_bloc.dart';
+import 'package:mindmate/bloc/mood/mood_event.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -22,15 +23,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  void _handleGoogleSignIn(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Google Sign-In akan segera hadir!'),
-        backgroundColor: Color(0xFF7C3AED),
-      ),
-    );
-  }
+  bool _loginHandled = false;
 
   @override
   void dispose() {
@@ -43,18 +36,25 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
-        if (state.status == AuthStatus.loginSuccess) {
-          context.read<AuthBloc>().add(AuthReset());
-          final email = _emailController.text;
+        if (state.status == AuthStatus.loginSuccess && !_loginHandled) {
+          _loginHandled = true;
+
+          final email = _emailController.text.trim();
           final prefs = await SharedPreferences.getInstance();
           if (!context.mounted) return;
-          await prefs.setString('current_user_email', email);
+          await prefs.setString('current_user_email', email.toLowerCase());
           if (!context.mounted) return;
+
           context.read<MoodBloc>().add(LoadMoodHistory());
           context.read<TaskBloc>().add(LoadTasks());
           context.read<ProfileBloc>().add(LoadProfile());
+
+          context.read<AuthBloc>().add(AuthReset());
+
           Navigator.of(context).pushNamedAndRemoveUntil('/main', (_) => false);
         } else if (state.status == AuthStatus.failure) {
+          _loginHandled = false;
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage),
@@ -82,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const SizedBox(height: 48),
 
-                      // ── Welcome title ──
                       const Text(
                         'Welcome 👋',
                         style: TextStyle(
@@ -105,17 +104,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 36),
 
-                      // ── Email field ──
                       AuthTextField(
                         controller: _emailController,
-                        hintText: 'Email Addres',
+                        hintText: 'Email Address',
                         prefixIcon: Icons.mail_outline_rounded,
                         keyboardType: TextInputType.emailAddress,
                       ),
 
                       const SizedBox(height: 18),
 
-                      // ── Password field ──
                       BlocBuilder<AuthBloc, AuthState>(
                         buildWhen: (prev, curr) => prev.loginObscure != curr.loginObscure,
                         builder: (context, state) {
@@ -138,7 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
 
-                      // ── Forgot Password ──
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
@@ -162,13 +158,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 20),
 
-                      // ── Log In button ──
                       BlocBuilder<AuthBloc, AuthState>(
                         buildWhen: (p, c) => p.status != c.status,
                         builder: (context, state) {
                           return AuthPrimaryButton(
                             text: state.status == AuthStatus.loading ? 'Loading...' : 'Log In',
                             onPressed: state.status == AuthStatus.loading ? null : () {
+                              _loginHandled = false;
                               context.read<AuthBloc>().add(LoginSubmitted(
                                     email: _emailController.text,
                                     password: _passwordController.text,
@@ -178,21 +174,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
 
-                      const SizedBox(height: 28),
-
-                      // ── Or Login with divider ──
-                      const AuthOrDivider(),
-
-                      const SizedBox(height: 24),
-
-                      // ── Social login buttons ──
-                      AuthSocialRow(
-                        onGoogleTap: () => _handleGoogleSignIn(context),
-                      ),
-
                       const SizedBox(height: 36),
 
-                      // ── Don't have an account? Sign Up ──
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,

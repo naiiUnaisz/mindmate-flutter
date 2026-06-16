@@ -20,7 +20,7 @@ class Task {
     this.isChecked = false,
     this.taskType = 'puzzle',
     required this.createdAt,
-    this.coinReward = 10,
+    this.coinReward = 25,
   });
 
   Task copyWith({
@@ -79,7 +79,7 @@ class Task {
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'])
           : DateTime.now(),
-      coinReward: int.tryParse((map['coin_reward'] ?? 10).toString()) ?? 10,
+      coinReward: int.tryParse((map['coin_reward'] ?? 25).toString()) ?? 25,
     );
   }
 }

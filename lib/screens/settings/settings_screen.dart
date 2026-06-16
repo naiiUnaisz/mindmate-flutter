@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/utils/theme_service.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/networks/api_client.dart';
+import 'package:mindmate/utils/notification_helper.dart';
 
 /// Setting screen matching the MindMate design.
 class SettingsScreen extends StatefulWidget {
@@ -13,9 +13,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _dailyMoodReminder = false;
-  bool _journalSummary = false;
-  bool _isDarkMode = false;
+  bool _breakReminder = false;
+  bool _streakReminder = false;
 
   @override
   void initState() {
@@ -28,9 +27,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final email = prefs.getString('current_user_email')?.toLowerCase();
     final prefix = email != null ? '${email}_' : '';
     setState(() {
-      _dailyMoodReminder = prefs.getBool('${prefix}daily_mood_reminder') ?? false;
-      _journalSummary = prefs.getBool('${prefix}journal_summary') ?? false;
-      _isDarkMode = prefs.getBool('theme_dark') ?? false;
+      _breakReminder = prefs.getBool('${prefix}break_reminder') ?? false;
+      _streakReminder = prefs.getBool('${prefix}streak_reminder') ?? false;
     });
   }
 
@@ -39,6 +37,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final email = prefs.getString('current_user_email')?.toLowerCase();
     final prefKey = email != null ? '${email}_$key' : key;
     await prefs.setBool(prefKey, value);
+
+    // Sync to backend
+    ApiClient().updateSettings({'settings': {key: value}});
   }
 
   @override
@@ -83,53 +84,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 32),
 
               // ═══════════════════════════════════════
-              // ACCOUNT SECTION
-              // ═══════════════════════════════════════
-              const Text(
-                'Account',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _SettingsGroup(
-                children: [
-                  _SettingsItem(label: 'Change Password', onTap: () => Navigator.pushNamed(context, '/change-password'), isLast: true),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // ═══════════════════════════════════════
-              // APPEARANCE SECTION
-              // ═══════════════════════════════════════
-              const Text(
-                'Appearance',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _SettingsGroup(
-                children: [
-                  _SettingsSwitchItem(
-                    label: 'Dark Mode',
-                    value: _isDarkMode,
-                    onChanged: (val) {
-                      setState(() => _isDarkMode = val);
-                      setThemeMode(val);
-                      ApiClient().updateSettings({'theme_dark': val});
-                    },
-                    isLast: true,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // ═══════════════════════════════════════
               // NOTIFICATION SECTION
               // ═══════════════════════════════════════
               const Text(
@@ -144,21 +98,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _SettingsGroup(
                 children: [
                   _SettingsSwitchItem(
-                    label: 'Daily mood reminder',
-                    value: _dailyMoodReminder,
+                    label: 'Break Reminder',
+                    value: _breakReminder,
                     onChanged: (val) {
-                      setState(() => _dailyMoodReminder = val);
-                      _saveSetting('daily_mood_reminder', val);
-                      ApiClient().updateSettings({'daily_mood_reminder': val});
+                      setState(() => _breakReminder = val);
+                      _saveSetting('break_reminder', val);
+                      if (val) {
+                        NotificationHelper.scheduleBreakReminder();
+                      } else {
+                        NotificationHelper.cancelBreakReminder();
+                      }
                     },
                   ),
                   _SettingsSwitchItem(
-                    label: 'Journal summary',
-                    value: _journalSummary,
+                    label: 'Streak Reminder',
+                    value: _streakReminder,
                     onChanged: (val) {
-                      setState(() => _journalSummary = val);
-                      _saveSetting('journal_summary', val);
-                      ApiClient().updateSettings({'journal_summary': val});
+                      setState(() => _streakReminder = val);
+                      _saveSetting('streak_reminder', val);
+                      if (val) {
+                        NotificationHelper.scheduleStreakReminder();
+                      } else {
+                        NotificationHelper.cancelStreakReminder();
+                      }
                     },
                     isLast: true,
                   ),
@@ -186,21 +148,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 32),
 
-              // ═══════════════════════════════════════
-              // BOTTOM EXTRA LIST (as in design)
-              // ═══════════════════════════════════════
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFF3F4F6)),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    _SettingsItem(label: 'Change Password', onTap: () => Navigator.pushNamed(context, '/change-password'), hasBackground: false, isLast: true),
-                  ],
-                ),
-              ),
-              
               const SizedBox(height: 40),
             ],
           ),
@@ -237,13 +184,11 @@ class _SettingsItem extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool isLast;
-  final bool hasBackground;
 
   const _SettingsItem({
     required this.label,
     required this.onTap,
     this.isLast = false,
-    this.hasBackground = true,
   });
 
   @override
@@ -275,7 +220,7 @@ class _SettingsItem extends StatelessWidget {
             ),
           ),
         ),
-        if (!isLast && !hasBackground)
+        if (!isLast)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Divider(height: 1, color: Color(0xFFF3F4F6)),

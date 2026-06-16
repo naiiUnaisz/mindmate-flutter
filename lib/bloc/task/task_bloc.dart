@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/bloc/task/task_state.dart';
-import 'package:application_belajar/models/task_model.dart';
-import 'package:application_belajar/utils/constants.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/bloc/task/task_state.dart';
+import 'package:mindmate/models/task_model.dart';
+import 'package:mindmate/utils/constants.dart';
+import 'package:mindmate/networks/api_client.dart';
 
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final ApiClient _client = ApiClient();
@@ -19,6 +19,8 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKey('tasks'), jsonEncode(tasks.map((t) => t.toMap()).toList()));
     await prefs.setStringList(_prefKey('daily_puzzle_task_ids'), dailyTasks.map((t) => t.id).toList());
+    final completedIds = dailyTasks.where((t) => t.isCompleted).map((t) => t.id).toList();
+    await prefs.setStringList(_prefKey('daily_completed_ids'), completedIds);
   }
 
   List<Task>? _loadTasksSync(String json) {
@@ -45,19 +47,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     on<ClearTasks>(_onClearTasks);
   }
 
-  List<Task> _buildDailyFrom(List<Task> tasks) {
-    final now = DateTime.now();
-    return tasks.take(AppConstants.maxDailyPuzzleTasks).map((t) => Task(
-      id: t.id,
-      title: t.title,
-      description: t.description,
-      deadline: now,
-      isCompleted: t.isCompleted,
-      createdAt: now,
-      coinReward: t.coinReward,
-    )).toList();
-  }
-
   Future<void> _onLoadTasks(LoadTasks event, Emitter<TaskState> emit) async {
     emit(state.copyWith(status: TaskStatus.loading, tasks: [], dailyPuzzleTasks: [], completedTasksToday: 0));
 
@@ -73,6 +62,13 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       if (loaded != null) localTasks = loaded;
     }
 
+    // Also load cached daily task data
+    final cachedDailyIds = prefs.getStringList(_prefKey('daily_puzzle_task_ids')) ?? [];
+    final cachedDailyCompleted = prefs.getStringList(_prefKey('daily_completed_ids')) ?? [];
+    final lastDate = prefs.getString(_prefKey('daily_puzzle_date')) ??
+        (rawEmail != null && rawEmail != _userEmail ? prefs.getString('${rawEmail}_daily_puzzle_date') : null);
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+
     try {
       final res = await _client.getTasks();
       List<Task> mergedTasks;
@@ -81,12 +77,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             .map((e) => Task.fromMap(e as Map<String, dynamic>))
             .toList();
 
-        // Merge: API tasks are source of truth, but keep local tasks not in API
         final apiIds = apiTasks.map((t) => t.id).toSet();
         final localOnlyTasks = localTasks.where((t) => !apiIds.contains(t.id)).toList();
         mergedTasks = [...apiTasks, ...localOnlyTasks];
 
-        // Sync API completion status back to local-only tasks
         for (final apiTask in apiTasks) {
           final idx = mergedTasks.indexWhere((t) => t.id == apiTask.id);
           if (idx >= 0) {
@@ -94,66 +88,94 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           }
         }
 
-        // daily_puzzle_date: lowercase prefixed → original-case prefixed
-        final lastDate = prefs.getString(_prefKey('daily_puzzle_date')) ??
-            (rawEmail != null && rawEmail != _userEmail ? prefs.getString('${rawEmail}_daily_puzzle_date') : null);
-        final today = DateTime.now().toIso8601String().substring(0, 10);
+        // Step 1: Load daily record from API to get completion status
+        Set<String> apiCompletedTaskIds = {};
+        try {
+          final dailyRes = await _client.getDailyRecord();
+          if (dailyRes['status'] == 200 && dailyRes['data'] != null) {
+            final dailyData = dailyRes['data'] is Map<String, dynamic>
+                ? dailyRes['data'] as Map<String, dynamic>
+                : null;
+            if (dailyData != null) {
+              if (dailyData['daily_task_items'] is List) {
+                for (final item in dailyData['daily_task_items'] as List) {
+                  if (item is Map<String, dynamic>) {
+                    final taskId = (item['task_id'] ?? '').toString();
+                    final isCompleted = item['is_completed'] == true;
+                    if (taskId.isNotEmpty && isCompleted) {
+                      apiCompletedTaskIds.add(taskId);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {}
 
-        // Migration: original-case prefixed daily_puzzle_date → lowercase
-        if (rawEmail != null && rawEmail != _userEmail && prefs.getString('${rawEmail}_daily_puzzle_date') != null && prefs.getString(_prefKey('daily_puzzle_date')) == null && lastDate != null) {
-          await prefs.setString(_prefKey('daily_puzzle_date'), lastDate);
-          await prefs.remove('${rawEmail}_daily_puzzle_date');
+        // Step 2: Apply API completion status to merged tasks
+        if (apiCompletedTaskIds.isNotEmpty) {
+          for (int i = 0; i < mergedTasks.length; i++) {
+            if (apiCompletedTaskIds.contains(mergedTasks[i].id)) {
+              mergedTasks[i] = mergedTasks[i].copyWith(
+                isCompleted: true,
+                isCompletedToday: true,
+                isChecked: true,
+              );
+            }
+          }
         }
 
+        // Step 3: Build daily tasks based on date
         List<Task> daily;
         int completedCount;
 
         if (lastDate != today) {
+          // New day: pick up to 6 uncompleted tasks for today's puzzle
           await prefs.setString(_prefKey('daily_puzzle_date'), today);
+          await prefs.remove(_prefKey('daily_puzzle_task_ids'));
+          await prefs.remove(_prefKey('daily_completed_ids'));
+
           daily = mergedTasks
               .where((t) => !t.isCompleted)
               .take(AppConstants.maxDailyPuzzleTasks)
-              .map((t) => Task(
-                    id: t.id,
-                    title: t.title,
-                    description: t.description,
-                    deadline: DateTime.now(),
-                    isCompleted: t.isCompleted,
-                    createdAt: DateTime.now(),
-                    coinReward: t.coinReward,
-                  ))
               .toList();
           completedCount = 0;
         } else {
-          final savedDailyIds = prefs.getStringList(_prefKey('daily_puzzle_task_ids')) ?? [];
-          if (savedDailyIds.isNotEmpty) {
-            daily = mergedTasks.where((t) => savedDailyIds.contains(t.id)).toList();
-            // If no daily tasks matched saved IDs (e.g. UUID tasks not in API),
-            // fall back to rebuilding from merged tasks
+          // Same day: restore from saved IDs or API
+          if (cachedDailyIds.isNotEmpty) {
+            daily = mergedTasks.where((t) => cachedDailyIds.contains(t.id)).toList();
             if (daily.isEmpty) {
               daily = mergedTasks
                   .where((t) => !t.isCompleted)
                   .take(AppConstants.maxDailyPuzzleTasks)
-                  .map((t) => Task(
-                        id: t.id,
-                        title: t.title,
-                        description: t.description,
-                        deadline: DateTime.now(),
-                        isCompleted: t.isCompleted,
-                        createdAt: DateTime.now(),
-                        coinReward: t.coinReward,
-                      ))
                   .toList();
             }
           } else {
-            daily = state.dailyPuzzleTasks.isNotEmpty
-                ? state.dailyPuzzleTasks
-                : _buildDailyFrom(mergedTasks);
+            daily = mergedTasks
+                .where((t) => !t.isCompleted)
+                .take(AppConstants.maxDailyPuzzleTasks)
+                .toList();
           }
-          completedCount = daily.where((t) => t.isCompleted).length;
+
+          // Count completed from API or cache
+          if (apiCompletedTaskIds.isNotEmpty) {
+            completedCount = daily.where((t) => apiCompletedTaskIds.contains(t.id)).length;
+          } else if (cachedDailyCompleted.isNotEmpty) {
+            completedCount = daily.where((t) => cachedDailyCompleted.contains(t.id)).length;
+          } else {
+            completedCount = daily.where((t) => t.isCompleted).length;
+          }
         }
 
+        // Step 4: Save to local cache
         await _saveTasks(mergedTasks, daily);
+        await prefs.setStringList(
+          _prefKey('daily_puzzle_task_ids'),
+          daily.map((t) => t.id).toList(),
+        );
+        // Save completed task IDs for this daily puzzle
+        final completedIds = daily.where((t) => t.isCompleted).map((t) => t.id).toList();
+        await prefs.setStringList(_prefKey('daily_completed_ids'), completedIds);
 
         emit(state.copyWith(
           tasks: mergedTasks,
@@ -162,17 +184,38 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           status: TaskStatus.success,
         ));
       } else {
-        // API failed — use local cache
         if (localTasks.isNotEmpty) {
-          emit(state.copyWith(tasks: localTasks, status: TaskStatus.success));
+          // Use local cache with saved daily state
+          List<Task> daily = [];
+          int completedCount = 0;
+          if (lastDate == today && cachedDailyIds.isNotEmpty) {
+            daily = localTasks.where((t) => cachedDailyIds.contains(t.id)).toList();
+            completedCount = daily.where((t) => t.isCompleted).length;
+          }
+          emit(state.copyWith(
+            tasks: localTasks,
+            dailyPuzzleTasks: daily,
+            completedTasksToday: completedCount,
+            status: TaskStatus.success,
+          ));
           return;
         }
         emit(state.copyWith(status: TaskStatus.success));
       }
     } catch (_) {
-      // Network error — use local cache
       if (localTasks.isNotEmpty) {
-        emit(state.copyWith(tasks: localTasks, status: TaskStatus.success));
+        List<Task> daily = [];
+        int completedCount = 0;
+        if (lastDate == today && cachedDailyIds.isNotEmpty) {
+          daily = localTasks.where((t) => cachedDailyIds.contains(t.id)).toList();
+          completedCount = daily.where((t) => t.isCompleted).length;
+        }
+        emit(state.copyWith(
+          tasks: localTasks,
+          dailyPuzzleTasks: daily,
+          completedTasksToday: completedCount,
+          status: TaskStatus.success,
+        ));
         return;
       }
       emit(state.copyWith(status: TaskStatus.success));
@@ -269,20 +312,24 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     final newCompletedCount = state.completedTasksToday + 1;
     final isStreakAchieved = newCompletedCount == AppConstants.maxDailyPuzzleTasks;
 
+    final coinReward = AppConstants.baseCoinReward;
+
+    // Emit ONE state with completion result — no second emit after API
     emit(state.copyWith(
       tasks: updatedTasks,
       dailyPuzzleTasks: updatedDaily,
       completedTasksToday: newCompletedCount,
       lastCompletionResult: TaskCompletionResult(
-        coinReward: completedTask.coinReward,
+        coinReward: coinReward,
         isStreakAchieved: isStreakAchieved,
         completedTasksToday: newCompletedCount,
       ),
     ));
     await _saveTasks(updatedTasks, updatedDaily);
 
+    // Call API but do NOT emit again — use fire-and-forget
     try {
-      await _client.completeTask(event.taskId);
+      await _client.completeTask(event.taskId, source: 'puzzle');
     } catch (_) {}
   }
 

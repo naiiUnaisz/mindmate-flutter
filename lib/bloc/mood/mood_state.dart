@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:application_belajar/models/mood_model.dart';
+import 'package:mindmate/models/mood_model.dart';
 
 enum MoodStatus { initial, loading, success, failure }
 

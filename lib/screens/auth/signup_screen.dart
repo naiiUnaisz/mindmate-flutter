@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/bloc/auth/auth_bloc.dart';
-import 'package:application_belajar/bloc/auth/auth_event.dart';
-import 'package:application_belajar/bloc/auth/auth_state.dart';
-import 'package:application_belajar/screens/auth/auth_widgets.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/bloc/task/task_event.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/bloc/mood/mood_bloc.dart';
-import 'package:application_belajar/bloc/mood/mood_event.dart';
+import 'package:mindmate/bloc/auth/auth_bloc.dart';
+import 'package:mindmate/bloc/auth/auth_event.dart';
+import 'package:mindmate/bloc/auth/auth_state.dart';
+import 'package:mindmate/screens/auth/auth_widgets.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/task/task_event.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/bloc/mood/mood_bloc.dart';
+import 'package:mindmate/bloc/mood/mood_event.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -24,6 +24,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _signupHandled = false;
 
   @override
   void dispose() {
@@ -38,18 +39,25 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
-        if (state.status == AuthStatus.signupSuccess) {
-          context.read<AuthBloc>().add(AuthReset());
-          final email = _emailController.text;
+        if (state.status == AuthStatus.signupSuccess && !_signupHandled) {
+          _signupHandled = true;
+
+          final email = _emailController.text.trim();
           final prefs = await SharedPreferences.getInstance();
           if (!context.mounted) return;
-          await prefs.setString('current_user_email', email);
+          await prefs.setString('current_user_email', email.toLowerCase());
           if (!context.mounted) return;
+
           context.read<MoodBloc>().add(LoadMoodHistory());
           context.read<TaskBloc>().add(LoadTasks());
           context.read<ProfileBloc>().add(LoadProfile());
+
+          context.read<AuthBloc>().add(AuthReset());
+
           Navigator.of(context).pushNamedAndRemoveUntil('/main', (_) => false);
         } else if (state.status == AuthStatus.failure) {
+          _signupHandled = false;
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage),

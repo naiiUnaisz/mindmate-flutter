@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_event.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/models/puzzle_model.dart';
-import 'package:application_belajar/config/theme.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_event.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/models/puzzle_model.dart';
+import 'package:mindmate/config/theme.dart';
 
 /// Detail screen for a single puzzle artwork.
 ///

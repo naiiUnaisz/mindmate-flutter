@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/screens/home/home_screen.dart';
-import 'package:application_belajar/screens/relax/relax_screen.dart';
-import 'package:application_belajar/screens/insights/insights_screen.dart';
-import 'package:application_belajar/screens/profile/profile_screen.dart';
-import 'package:application_belajar/bloc/task/task_bloc.dart';
-import 'package:application_belajar/utils/constants.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/screens/home/home_screen.dart';
+import 'package:mindmate/screens/relax/relax_screen.dart';
+import 'package:mindmate/screens/insights/insights_screen.dart';
+import 'package:mindmate/screens/profile/profile_screen.dart';
+import 'package:mindmate/bloc/task/task_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/utils/constants.dart';
+import 'package:mindmate/utils/notification_helper.dart';
 
 /// Main screen with custom bottom navigation bar matching the MindMate design.
 ///
@@ -25,6 +27,7 @@ class MainScreen extends StatefulWidget {
 
 class MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  bool _notificationsShown = false;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -33,11 +36,38 @@ class MainScreenState extends State<MainScreen> {
     const ProfileScreen(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_notificationsShown && mounted) {
+        _notificationsShown = true;
+        _scheduleNotifications();
+      }
+    });
+  }
+
+  Future<void> _scheduleNotifications() async {
+    await NotificationHelper.scheduleBreakReminder();
+    await NotificationHelper.scheduleStreakReminder();
+  }
+
   void switchToTab(int index) {
     setState(() => _selectedIndex = index);
   }
 
   void _openAddTask() {
+    final profileState = context.read<ProfileBloc>().state;
+    if (profileState.restDayDate != null) {
+      final now = DateTime.now();
+      if (profileState.restDayDate == DateTime(now.year, now.month, now.day)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rest Day is active! You cannot add new tasks.')),
+        );
+        return;
+      }
+    }
+
     final taskState = context.read<TaskBloc>().state;
     if (taskState.dailyPuzzleTasks.length >= AppConstants.maxDailyPuzzleTasks) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -66,31 +96,45 @@ class MainScreenState extends State<MainScreen> {
   // FLOATING ACTION BUTTON (center + icon)
   // ─────────────────────────────────────────────────────────────────────
   Widget _buildFAB() {
+    final profileState = context.read<ProfileBloc>().state;
+    final isRestDay = profileState.restDayDate != null &&
+        profileState.restDayDate == DateTime.now();
+    final isLocked = isRestDay;
+
     return Container(
       width: 58,
       height: 58,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF9B7FE6), Color(0xFF7C3AED)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.35),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        gradient: isLocked
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9B7FE6), Color(0xFF7C3AED)],
+              ),
+        color: isLocked ? const Color(0xFFD1D5DB) : null,
+        boxShadow: isLocked
+            ? []
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: FloatingActionButton(
-        onPressed: _openAddTask,
+        onPressed: isLocked ? null : _openAddTask,
         backgroundColor: Colors.transparent,
         elevation: 0,
         highlightElevation: 0,
         shape: const CircleBorder(),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+        child: Icon(
+          isLocked ? Icons.lock_outline_rounded : Icons.add_rounded,
+          color: Colors.white,
+          size: 30,
+        ),
       ),
     );
   }
@@ -111,7 +155,7 @@ class MainScreenState extends State<MainScreen> {
             child: Container(
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF), // Light purple background
+                color: const Color(0xFFE8DFFF), // Light purple background
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -184,7 +228,7 @@ class MainScreenState extends State<MainScreen> {
         CustomPaint(
           size: const Size(28, 28),
           painter: _PuzzleLinesPainter(
-            color: const Color(0xFFF3E8FF),
+            color: const Color(0xFFE8DFFF),
           ), // Navbar bg color
         ),
       ],
@@ -202,7 +246,7 @@ class MainScreenState extends State<MainScreen> {
           right: -4,
           child: Container(
             decoration: const BoxDecoration(
-              color: Color(0xFFF3E8FF), // match navbar bg
+              color: Color(0xFFE8DFFF), // match navbar bg
               shape: BoxShape.circle,
             ),
             padding: const EdgeInsets.all(2),

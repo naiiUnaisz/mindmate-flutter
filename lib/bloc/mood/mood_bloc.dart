@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/bloc/mood/mood_event.dart';
-import 'package:application_belajar/bloc/mood/mood_state.dart';
-import 'package:application_belajar/models/mood_model.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/bloc/mood/mood_event.dart';
+import 'package:mindmate/bloc/mood/mood_state.dart';
+import 'package:mindmate/models/mood_model.dart';
+import 'package:mindmate/networks/api_client.dart';
 
 class MoodBloc extends Bloc<MoodEvent, MoodState> {
   final ApiClient _client = ApiClient();

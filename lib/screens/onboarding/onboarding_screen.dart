@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/widgets/onboarding_illustrations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/widgets/onboarding_illustrations.dart';
 
 /// MindMate Onboarding Screen – 3-page carousel matching the design.
 ///
@@ -62,14 +63,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
-  void _nextPage() {
+  void _nextPage() async {
     if (_currentPage < _totalPages - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOutCubic,
       );
     } else {
-      Navigator.of(context).pushReplacementNamed('/login');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', true);
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 
@@ -137,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             margin: EdgeInsets.only(right: index < _totalPages - 1 ? 6 : 0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(3),
-              color: isActive ? AppColors.primary : const Color(0xFFE8D5FF),
+              color: isActive ? AppColors.primary : const Color(0xFFE8DFFF),
             ),
           ),
         );
@@ -260,7 +265,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFF3E8FF).withValues(alpha: 0.5),
+                  color: const Color(0xFFE8DFFF).withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -273,7 +278,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFF3E8FF).withValues(alpha: 0.4),
+                  color: const Color(0xFFE8DFFF).withValues(alpha: 0.4),
                 ),
               ),
             ),
@@ -286,7 +291,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFE8D5FF).withValues(alpha: 0.6),
+                  color: const Color(0xFFE8DFFF).withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -299,7 +304,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 height: 6,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFE8D5FF).withValues(alpha: 0.5),
+                  color: const Color(0xFFE8DFFF).withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -312,7 +317,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 height: 10,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFF3E8FF).withValues(alpha: 0.4),
+                  color: const Color(0xFFE8DFFF).withValues(alpha: 0.4),
                 ),
               ),
             ),

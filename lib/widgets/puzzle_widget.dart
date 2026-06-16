@@ -26,11 +26,11 @@ class PuzzleWidget extends StatelessWidget {
   // Matches the exact design: cream + lavender alternating
   static const _cellColors = [
     Color(0xFFF0EADB), // Row 1, Col 1 — cream
-    Color(0xFFE5DDF5), // Row 1, Col 2 — lavender
+    Color(0xFFE8DFFF), // Row 1, Col 2 — lavender
     Color(0xFFF0EADB), // Row 1, Col 3 — cream
-    Color(0xFFE5DDF5), // Row 2, Col 1 — lavender
+    Color(0xFFE8DFFF), // Row 2, Col 1 — lavender
     Color(0xFFF0EADB), // Row 2, Col 2 — cream
-    Color(0xFFE5DDF5), // Row 2, Col 3 — lavender
+    Color(0xFFE8DFFF), // Row 2, Col 3 — lavender
   ];
 
   @override

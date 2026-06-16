@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:application_belajar/models/user_model.dart';
+import 'package:mindmate/models/user_model.dart';
 
 abstract class ProfileEvent extends Equatable {
   const ProfileEvent();

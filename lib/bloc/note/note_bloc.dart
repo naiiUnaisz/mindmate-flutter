@@ -2,12 +2,10 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:application_belajar/bloc/note/note_event.dart';
-import 'package:application_belajar/bloc/note/note_state.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/bloc/note/note_event.dart';
+import 'package:mindmate/bloc/note/note_state.dart';
 
 class NoteBloc extends Bloc<NoteEvent, NoteState> {
-  final ApiClient _client = ApiClient();
   String? _userEmail;
 
   String _prefKey(String key) =>
@@ -64,30 +62,6 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     }
 
     emit(state.copyWith(status: NoteStatus.success, notes: items));
-
-    // Try API to enrich data
-    try {
-      final res = await _client.getNotes();
-      if (res['status'] == 200 && res['data'] != null) {
-        final apiList = (res['data'] as List)
-            .map((e) => NoteItem.fromMap(e as Map<String, dynamic>))
-            .toList();
-
-        for (final apiItem in apiList) {
-          final idx = items.indexWhere((n) => n.id == apiItem.id);
-          if (idx < 0) {
-            items.add(apiItem);
-          }
-        }
-        await _saveToPrefs(items);
-        emit(state.copyWith(status: NoteStatus.success, notes: items));
-      }
-    } catch (_) {
-      emit(state.copyWith(
-        status: NoteStatus.success,
-        errorMessage: 'Gagal memuat catatan dari server',
-      ));
-    }
   }
 
   Future<void> _onAddNote(
@@ -105,24 +79,6 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     final updated = List<NoteItem>.from(state.notes)..add(newNote);
     emit(state.copyWith(notes: updated));
     await _saveToPrefs(updated);
-
-    try {
-      final res = await _client.createNote(event.title, event.content, tab: event.tab);
-      if (res['status'] == 200 || res['status'] == 201) {
-        final data = res['data'];
-        if (data is Map<String, dynamic>) {
-          final apiNote = NoteItem.fromMap(data).copyWith(tab: event.tab);
-          final synced = updated.map((n) =>
-              n.id == localId ? apiNote : n).toList();
-          emit(state.copyWith(notes: synced));
-          await _saveToPrefs(synced);
-        }
-      }
-    } catch (_) {
-      emit(state.copyWith(
-        errorMessage: 'Gagal menyimpan catatan ke server',
-      ));
-    }
   }
 
   Future<void> _onUpdateNote(
@@ -137,14 +93,6 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
 
     emit(state.copyWith(notes: updated));
     await _saveToPrefs(updated);
-
-    try {
-      await _client.updateNote(event.id, event.title, event.content);
-    } catch (_) {
-      emit(state.copyWith(
-        errorMessage: 'Gagal memperbarui catatan',
-      ));
-    }
   }
 
   Future<void> _onDeleteNote(
@@ -154,14 +102,6 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     final updated = state.notes.where((n) => n.id != event.id).toList();
     emit(state.copyWith(notes: updated));
     await _saveToPrefs(updated);
-
-    try {
-      await _client.deleteNote(event.id);
-    } catch (_) {
-      emit(state.copyWith(
-        errorMessage: 'Gagal menghapus catatan',
-      ));
-    }
   }
 
   Future<void> _onCompleteNote(
@@ -176,19 +116,6 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
 
     emit(state.copyWith(notes: updated));
     await _saveToPrefs(updated);
-
-    final toggled = updated.firstWhere((n) => n.id == event.id);
-
-    try {
-      await _client.updateNote(
-        event.id, toggled.title, toggled.content,
-        isCompleted: toggled.isCompleted,
-      );
-    } catch (_) {
-      emit(state.copyWith(
-        errorMessage: 'Gagal memperbarui status catatan',
-      ));
-    }
   }
 
   Future<void> _onMoveNote(

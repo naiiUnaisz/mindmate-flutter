@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:application_belajar/models/user_model.dart';
-import 'package:application_belajar/models/puzzle_model.dart';
+import 'package:mindmate/models/user_model.dart';
+import 'package:mindmate/models/puzzle_model.dart';
 
 const List<Puzzle> allPuzzles = [
   Puzzle(id: 'puzzle_1', title: 'Winter Cabin', description: 'A cozy house blanketed in pristine white snow.', assetPath: 'assets/images/puzzle_1.png', coinCost: 50),
@@ -19,7 +19,10 @@ int getDailyPuzzleIndex() {
 
 String getDailyPuzzleId() => 'puzzle_${getDailyPuzzleIndex() + 1}';
 
+enum ProfileStatus { initial, updating, updated, error }
+
 class ProfileState extends Equatable {
+  final ProfileStatus status;
   final User user;
   final List<Map<String, dynamic>> coinHistory;
   final Map<String, Map<String, int>> weeklyHistory;
@@ -31,6 +34,7 @@ class ProfileState extends Equatable {
   final int restDayUsed;
 
   const ProfileState({
+    this.status = ProfileStatus.initial,
     required this.user,
     this.coinHistory = const [],
     this.weeklyHistory = const {},
@@ -45,6 +49,7 @@ class ProfileState extends Equatable {
   int get restDayRemaining => (restDayQuota - restDayUsed).clamp(0, restDayQuota);
 
   ProfileState copyWith({
+    ProfileStatus? status,
     User? user,
     List<Map<String, dynamic>>? coinHistory,
     Map<String, Map<String, int>>? weeklyHistory,
@@ -58,6 +63,7 @@ class ProfileState extends Equatable {
     bool clearRestDayDate = false,
   }) {
     return ProfileState(
+      status: status ?? this.status,
       user: user ?? this.user,
       coinHistory: coinHistory ?? this.coinHistory,
       weeklyHistory: weeklyHistory ?? this.weeklyHistory,
@@ -120,5 +126,5 @@ class ProfileState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [user, coinHistory, weeklyHistory, lastStreakDate, restDayDate, maxStreak, collectedPuzzles, restDayQuota, restDayUsed];
+  List<Object?> get props => [status, user, coinHistory, weeklyHistory, lastStreakDate, restDayDate, maxStreak, collectedPuzzles, restDayQuota, restDayUsed];
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/models/puzzle_model.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/screens/profile/puzzle_detail_screen.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/models/puzzle_model.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/screens/profile/puzzle_detail_screen.dart';
 
 /// Puzzle Collection screen matching the MindMate UI design.
 ///
@@ -174,7 +174,7 @@ class _PuzzleGridCard extends StatelessWidget {
                 if (!isUnlocked) ...[
                   // Semi-transparent purple-white tint
                   Container(
-                    color: const Color(0xFFF3E8FF).withValues(alpha: 0.65),
+                    color: const Color(0xFFE8DFFF).withValues(alpha: 0.65),
                   ),
                   // Lock icon centered
                   const Center(

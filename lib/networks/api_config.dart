@@ -11,7 +11,7 @@ class ApiConfig {
 
   // ── User / Profile ──
   static const String user = '/user';
-  static const String userUpdate = '/user/update';
+  static const String userUpdate = '/user/profile';
   static const String userProfile = '/user/profile';
 
   // ── Tasks (RESTful resource) ──
@@ -20,7 +20,7 @@ class ApiConfig {
   static String taskCheck(int id) => '/tasks/$id/check';
 
   // ── Coins ──
-  static const String coinHistory = '/coins/history';
+  static const String coinHistory = '/coin-histori';
   static const String coinEarn = '/coins/earn';
   static const String coinSpend = '/coins/spend';
 
@@ -41,6 +41,12 @@ class ApiConfig {
 
   // ── Relax / Apps ──
   static const String apps = '/apps';
+  static String purchaseApp(int id) => '/apps/$id/purchase';
+  static const String relaxSessionStart = '/relax/session/start';
+  static const String relaxSessionEnd = '/relax/session/end';
+  static const String relaxSessionActive = '/relax/session/active';
+  static const String relaxSessionHistory = '/relax/session/history';
+  static const String appsComplete = '/apps/complete';
 
   // ── Rest Day ──
   static const String restDay = '/daily-record/rest-day';
@@ -49,7 +55,7 @@ class ApiConfig {
   static const String dailyRecord = '/daily-record';
 
   // ── Mood ──
-  static const String mood = '/mood';
+  static const String mood = '/daily-record/mood';
   static const String moodHistory = '/mood/history';
 
   // ── Notes ──

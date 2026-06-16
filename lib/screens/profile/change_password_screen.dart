@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:application_belajar/networks/api_client.dart';
+import 'package:mindmate/networks/api_client.dart';
 
 /// Change Password screen matching the MindMate design.
 class ChangePasswordScreen extends StatefulWidget {

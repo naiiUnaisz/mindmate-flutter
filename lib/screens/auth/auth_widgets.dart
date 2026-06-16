@@ -19,7 +19,7 @@ class AuthBackgroundBlobs extends StatelessWidget {
             height: 140,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFEDE9FE).withValues(alpha: 0.4),
+              color: const Color(0xFFE8DFFF).withValues(alpha: 0.4),
             ),
           ),
         ),
@@ -31,7 +31,7 @@ class AuthBackgroundBlobs extends StatelessWidget {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFEDE9FE).withValues(alpha: 0.35),
+              color: const Color(0xFFE8DFFF).withValues(alpha: 0.35),
             ),
           ),
         ),
@@ -43,7 +43,7 @@ class AuthBackgroundBlobs extends StatelessWidget {
             height: 80,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFEDE9FE).withValues(alpha: 0.3),
+              color: const Color(0xFFE8DFFF).withValues(alpha: 0.3),
             ),
           ),
         ),
@@ -55,7 +55,7 @@ class AuthBackgroundBlobs extends StatelessWidget {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFEDE9FE).withValues(alpha: 0.25),
+              color: const Color(0xFFE8DFFF).withValues(alpha: 0.25),
             ),
           ),
         ),
@@ -67,7 +67,7 @@ class AuthBackgroundBlobs extends StatelessWidget {
             height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFEDE9FE).withValues(alpha: 0.3),
+              color: const Color(0xFFE8DFFF).withValues(alpha: 0.3),
             ),
           ),
         ),
@@ -145,139 +145,7 @@ class AuthTextField extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// "Or Login with" DIVIDER
-// ═══════════════════════════════════════════════════════════════════════════
 
-class AuthOrDivider extends StatelessWidget {
-  const AuthOrDivider({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  const Color(0xFFD1D5DB).withValues(alpha: 0.7),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'Or Login with',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFF9CA3AF),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFFD1D5DB).withValues(alpha: 0.7),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SOCIAL ICON BUTTON (Facebook, Apple, Google+)
-// ═══════════════════════════════════════════════════════════════════════════
-
-class AuthSocialIconButton extends StatelessWidget {
-  final IconData? icon;
-  final String? text;
-  final Color color;
-  final VoidCallback onTap;
-
-  const AuthSocialIconButton({
-    super.key,
-    this.icon,
-    this.text,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: icon != null
-              ? Icon(icon, color: color, size: 26)
-              : Text(
-                  text ?? '',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SOCIAL BUTTONS ROW
-// ═══════════════════════════════════════════════════════════════════════════
-
-class AuthSocialRow extends StatelessWidget {
-  final VoidCallback? onGoogleTap;
-
-  const AuthSocialRow({
-    super.key,
-    this.onGoogleTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        AuthSocialIconButton(
-          text: 'G+',
-          color: const Color(0xFFDB4437),
-          onTap: onGoogleTap ?? () {},
-        ),
-      ],
-    );
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PRIMARY GRADIENT BUTTON

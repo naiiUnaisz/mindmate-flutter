@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:application_belajar/models/task_model.dart';
+import 'package:mindmate/models/task_model.dart';
 
 abstract class TaskEvent extends Equatable {
   const TaskEvent();

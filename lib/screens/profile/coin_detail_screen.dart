@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_bloc.dart';
-import 'package:application_belajar/bloc/profile/profile_state.dart';
-import 'package:application_belajar/widgets/coin_widget.dart';
+import 'package:mindmate/bloc/profile/profile_bloc.dart';
+import 'package:mindmate/bloc/profile/profile_state.dart';
+import 'package:mindmate/widgets/coin_widget.dart';
 
 /// Screen displaying the user's current coin balance and transaction history.
 /// Follows the provided design:
@@ -188,7 +188,7 @@ class _HistoryItem extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: isExchange ? const Color(0xFFEBE5FB) : Colors.transparent,
+              color: isExchange ? const Color(0xFFE8DFFF) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(

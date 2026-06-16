@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:application_belajar/config/theme.dart';
-import 'package:application_belajar/models/task_model.dart';
+import 'package:mindmate/config/theme.dart';
+import 'package:mindmate/models/task_model.dart';
 import 'package:intl/intl.dart';
 
 class TaskCard extends StatelessWidget {
